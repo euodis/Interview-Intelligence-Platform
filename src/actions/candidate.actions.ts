@@ -10,7 +10,10 @@ export async function getCandidatesByVacancyId(vacancyId: string) {
     include: {
       summary: true,
       sessions: {
-        include: { interviewer: true }
+        include: { 
+          interviewer: true,
+          evaluations: true
+        }
       },
       assignments: {
         include: { interviewer: true }

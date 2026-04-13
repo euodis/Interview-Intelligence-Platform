@@ -1,27 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { getAIComparison } from "@/actions/interview.actions";
+import { ComparisonAnalysis } from "@/lib/ai";
 
-export default function CompareClient({ vacancy, candidates }: { vacancy: any, candidates: any[] }) {
+export default function CompareClient({ 
+  vacancy, 
+  candidates,
+  primaryCandidateId 
+}: { 
+  vacancy: any, 
+  candidates: any[],
+  primaryCandidateId?: string
+}) {
   const vacancyId = vacancy?.id;
 
   // Only candidates that match the vacancy and have some evaluations (status ОЦЕНЕН)
   const availableCandidates = candidates.filter(c => c.status === 'ОЦЕНЕН');
   
-  // Default pick top 2 evaluated candidates
-  const [selectedIds, setSelectedIds] = useState<string[]>(
-      availableCandidates.slice(0, 2).map(c => c.id)
-  );
+  // Default pick: primary candidate + the next best one if available
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+      if (primaryCandidateId && availableCandidates.find(c => c.id === primaryCandidateId)) {
+          const others = availableCandidates.filter(c => c.id !== primaryCandidateId);
+          return [primaryCandidateId, ...(others.length > 0 ? [others[0].id] : [])];
+      }
+      return availableCandidates.slice(0, 2).map(c => c.id);
+  });
+
+  const [aiAnalysis, setAiAnalysis] = useState<ComparisonAnalysis | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const plan = vacancy?.interviewPlan;
 
   const toggleCandidate = (id: string) => {
       setSelectedIds(prev => {
-          if (prev.includes(id)) return prev.filter(p => p !== id);
-          if (prev.length >= 3) return prev; // Max 3
+          if (prev.includes(id)) {
+              // Don't allow deselecting everything
+              if (prev.length === 1) return prev;
+              return prev.filter(p => p !== id);
+          }
+          if (prev.length >= 2) {
+              // Replace the second candidate if already have 2
+              return [prev[0], id];
+          }
           return [...prev, id];
       });
+      // Reset AI analysis if selection changes
+      setAiAnalysis(null);
+  };
+
+  const handleAIAnalyze = async () => {
+      if (selectedIds.length !== 2) return;
+      setIsAnalyzing(true);
+      try {
+          const result = await getAIComparison(selectedIds, vacancyId);
+          setAiAnalysis(result);
+      } catch (err) {
+          console.error("AI Analysis failed", err);
+      } finally {
+          setIsAnalyzing(false);
+      }
   };
 
   // Prepare comparison data
@@ -33,7 +72,7 @@ export default function CompareClient({ vacancy, candidates }: { vacancy: any, c
       // Compute avg scores per block
       const blockScores: Record<string, number | null> = {};
       plan?.blocks.forEach((block:any) => {
-          const evals = sessions.flatMap((s:any) => s.evaluations).filter((e:any) => e.blockId === block.id && e.score !== null);
+          const evals = sessions.flatMap((s:any) => s.evaluations || []).filter((e:any) => e && e.blockId === block.id && e.score !== null);
           if (evals.length > 0) {
               const avg = evals.reduce((acc:any, curr:any) => acc + curr.score, 0) / evals.length;
               blockScores[block.id] = avg;
@@ -62,11 +101,35 @@ export default function CompareClient({ vacancy, candidates }: { vacancy: any, c
                <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Сравнение Кандидатов</h1>
                <p className="text-zinc-500 mt-1">Оцените показатели side-by-side для принятия взвешенного решения.</p>
             </div>
+            
+            {selectedIds.length === 2 && (
+                <button 
+                   onClick={handleAIAnalyze}
+                   disabled={isAnalyzing}
+                   className={`flex items-center gap-2 rounded-xl px-5 py-2.5 font-bold shadow-lg transition-all focus:ring-4 focus:ring-violet-100 ${
+                       isAnalyzing 
+                         ? 'bg-violet-400 text-white cursor-not-allowed' 
+                         : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white hover:scale-[1.02] active:scale-[0.98]'
+                   }`}
+                >
+                   {isAnalyzing ? (
+                       <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          Анализ...
+                       </>
+                   ) : (
+                       <>
+                          <span className="text-lg leading-none">✨</span>
+                          Сравнить через ИИ
+                       </>
+                   )}
+                </button>
+            )}
          </div>
 
          {/* Candidate Pill Selector */}
          <div className="flex items-center gap-2 mt-2 flex-wrap">
-             <span className="text-sm font-bold text-zinc-500 mr-2 uppercase tracking-widest">Кандидаты для сравнения (Max 3):</span>
+             <span className="text-sm font-bold text-zinc-500 mr-2 uppercase tracking-widest">Кандидаты (Max 2):</span>
              {availableCandidates.map(c => {
                  const isSelected = selectedIds.includes(c.id);
                  return (
@@ -235,6 +298,55 @@ export default function CompareClient({ vacancy, candidates }: { vacancy: any, c
 
           </div>
       )}
+       {/* 4. AI Comparison Results */}
+       {aiAnalysis && (
+           <div className="flex flex-col gap-6 mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+               <div className="rounded-2xl border-2 border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-8 shadow-xl relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-8 opacity-[0.05] pointer-events-none">
+                       <span className="text-9xl">✨</span>
+                   </div>
+                   
+                   <div className="relative">
+                       <div className="flex items-center gap-3 mb-6">
+                           <div className="h-10 w-10 rounded-xl bg-violet-600 flex items-center justify-center text-white text-xl shadow-lg shadow-violet-200">
+                               ⚖️
+                           </div>
+                           <h2 className="text-2xl font-black text-zinc-900 tracking-tight">ИИ-Сравнительный Анализ</h2>
+                       </div>
+
+                       <p className="text-zinc-600 text-lg font-medium leading-relaxed mb-8 border-l-4 border-violet-500 pl-6 py-1">
+                           {aiAnalysis.summary}
+                       </p>
+
+                       <div className="grid md:grid-cols-2 gap-8 mb-10">
+                           {aiAnalysis.comparisonPoints.map((point, i) => (
+                               <div key={i} className="flex flex-col gap-2 p-5 rounded-2xl bg-white border border-violet-100 shadow-sm hover:shadow-md transition-shadow">
+                                   <h4 className="font-black text-xs uppercase tracking-[0.2em] text-violet-600">{point.area}</h4>
+                                   <p className="text-sm text-zinc-700 leading-relaxed font-medium">{point.analysis}</p>
+                               </div>
+                           ))}
+                       </div>
+
+                       <div className="rounded-2xl bg-zinc-900 p-8 text-white flex flex-col md:flex-row gap-8 items-center justify-between shadow-2xl">
+                           <div className="flex flex-col gap-2">
+                               <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Рекомендация ИИ</span>
+                               <h3 className="text-3xl font-black tracking-tight">
+                                   {aiAnalysis.winnerSuggestion === 'Draw' || aiAnalysis.winnerSuggestion === 'Ничья' 
+                                      ? 'Оба кандидата равны' 
+                                      : <span className="text-violet-400">В пользу {aiAnalysis.winnerSuggestion}</span>
+                                   }
+                               </h3>
+                           </div>
+                           <div className="max-w-md border-l border-zinc-700 pl-6 py-2">
+                               <p className="text-zinc-300 text-sm italic leading-relaxed">
+                                   "{aiAnalysis.rationale}"
+                               </p>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       )}
     </div>
   );
 }

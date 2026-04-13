@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
+import { compareCandidatesWithAI } from '@/lib/ai';
 
 export async function submitInterviewProtocol(data: {
    sessionId: string;
@@ -119,3 +120,39 @@ export async function updateCandidateSummary(applicationId: string, summaryData:
    revalidatePath(`/candidates/${applicationId}`);
    return summary;
 }
+
+export async function getAIComparison(candidateIds: string[], vacancyId: string) {
+   const authSession = await auth();
+   if (!authSession?.user) throw new Error('Unauthorized');
+
+   const candidates = await prisma.application.findMany({
+      where: {
+         id: { in: candidateIds }
+      },
+      include: {
+         summary: true,
+         sessions: {
+            where: { status: 'ЗАВЕРШЕНО' },
+            include: { evaluations: true }
+         }
+      }
+   });
+
+   const vacancy = await prisma.vacancy.findUnique({
+      where: { id: vacancyId }
+   });
+
+   if (!vacancy) throw new Error('Vacancy not found');
+
+   const payload = candidates.map(c => ({
+      name: c.name,
+      summary: c.summary as any,
+      evaluations: c.sessions.flatMap(s => s.evaluations)
+   }));
+
+   return await compareCandidatesWithAI({
+      candidates: payload,
+      role: vacancy.title
+   });
+}
+

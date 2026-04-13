@@ -18,7 +18,8 @@ export default function SummaryClient({ candidateInfo }: { candidateInfo: any })
 
    targetSessions.forEach((session: any) => {
       const inter = session.interviewer;
-      session.evaluations.forEach((ev: any) => {
+      session.evaluations?.forEach((ev: any) => {
+         if (!ev) return;
          const blockTitle = ev.block?.title || "Unknown Block";
          evalsToSubmit.push({
             interviewer: inter?.name,

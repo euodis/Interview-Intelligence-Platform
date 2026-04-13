@@ -186,7 +186,7 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
             <table className="w-full text-sm text-left min-w-max">
                <thead className="bg-zinc-50 border-b border-zinc-200 text-xs uppercase text-zinc-500">
                   <tr>
-                     <th className="px-6 py-4 font-semibold cursor-pointer hover:text-zinc-900" onClick={() => handleSort('NAME')}>
+                     <th className="sticky left-0 bg-zinc-50 z-20 px-6 py-4 font-semibold cursor-pointer hover:text-zinc-900 border-r border-zinc-200/50" onClick={() => handleSort('NAME')}>
                         Кандидат {sortField==='NAME' && (sortOrder==='ASC'?'↑':'↓')}
                      </th>
                      <th className="px-6 py-4 font-semibold cursor-pointer hover:text-zinc-900" onClick={() => handleSort('STATUS')}>
@@ -207,9 +207,13 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
                      <tr><td colSpan={8} className="px-6 py-8 text-center text-zinc-500">Нет кандидатов по данным фильтрам</td></tr>
                   )}
                   {tableData.map((row) => (
-                     <tr key={row.candidate.id} className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50/50">
+                     <tr 
+                        key={row.candidate.id} 
+                        onClick={() => router.push(`/candidates/${row.candidate.id}`)}
+                        className="group border-b border-zinc-100 last:border-0 hover:bg-zinc-50/50 cursor-pointer transition-colors"
+                     >
                         {/* Candidate */}
-                        <td className="px-6 py-4">
+                        <td className="sticky left-0 bg-white group-hover:bg-[#fcfcfd] z-10 px-6 py-4 border-r border-zinc-200/50 transition-colors">
                            <div className="font-semibold text-zinc-900">{row.candidate.name}</div>
                            <div className="text-xs text-zinc-400 mt-1">{row.candidate.currentCompany} • {row.candidate.experienceYears} лет</div>
                         </td>

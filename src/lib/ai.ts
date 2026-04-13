@@ -44,6 +44,18 @@ const DisagreementInterpretationSchema = z.object({
 
 export type DisagreementInterpretation = z.infer<typeof DisagreementInterpretationSchema>['disagreements'][0];
 
+const ComparisonAnalysisZodSchema = z.object({
+  summary: z.string(),
+  comparisonPoints: z.array(z.object({
+    area: z.string(),
+    analysis: z.string(),
+  })),
+  winnerSuggestion: z.string(),
+  rationale: z.string(),
+});
+
+export type ComparisonAnalysis = z.infer<typeof ComparisonAnalysisZodSchema>;
+
 const SYSTEM_PROMPT = `You are a Senior Staff Engineer and Expert Recruiter.
 Your goal is to generate a highly structured, professional interview plan for evaluating a candidate.
 The interview should test deep expertise, system thinking, and cultural fit.
@@ -353,4 +365,80 @@ Return JSON matching this schema (all strings in Russian):
     }));
   }
 }
+
+const COMPARISON_SYSTEM_PROMPT = `You are a Senior Staff HR and Technical Recruiter.
+Your goal is to perform a side-by-side comparison of two candidates for the same role.
+You will be provided with their AI Summaries, scores, and evaluation lists.
+
+Guidelines:
+1. Provide a concise, objective summary of the comparison in RUSSIAN.
+2. Identify 3-5 key comparison points (e.g. Technical Depth, Leadership, Experience) and explain who performed better in each area.
+3. Suggest a "winner" or state it's a "draw/toss-up".
+4. Provide a strong rationale for your suggestion in RUSSIAN.
+5. Tone: Professional, data-driven, executive-ready.
+6. Output ONLY valid JSON matching the schema.`;
+
+export async function compareCandidatesWithAI(input: {
+  candidates: Array<{
+    name: string;
+    summary: GeneratedCandidateSummary;
+    evaluations: any[];
+  }>;
+  role: string;
+}): Promise<ComparisonAnalysis> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    // Fallback Mock
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return {
+      summary: "Оба кандидата обладают сильными навыками, но с разным фокусом.",
+      comparisonPoints: [
+        { area: "Техническая глубина", analysis: `${input.candidates[0].name} сильнее в архитектурных вопросах, тогда как ${input.candidates[1].name} лучше ориентируется в практике.` },
+        { area: "Опыт работы", analysis: `${input.candidates[1].name} имеет больше релевантного опыта в крупных проектах.` }
+      ],
+      winnerSuggestion: input.candidates[1].name,
+      rationale: "Несмотря на отличные знания первого кандидата, опыт второго больше соответствует текущим масштабам задач проекта."
+    };
+  }
+
+  const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey });
+
+  const userPrompt = `
+Compare two candidates for the role of ${input.role} in RUSSIAN:
+${JSON.stringify(input.candidates, null, 2)}
+
+Return ONLY a JSON object matching this schema exactly (all strings in Russian):
+{
+  "summary": "High-level comparison (Russian)",
+  "comparisonPoints": [
+    { "area": "Competency/Area name (Russian)", "analysis": "Comparison text (Russian)" }
+  ],
+  "winnerSuggestion": "Candidate Name or 'Draw'",
+  "rationale": "Why this suggestion was made (Russian)"
+}
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: COMPARISON_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("Empty response");
+
+    const parsedJson = JSON.parse(content);
+    return ComparisonAnalysisZodSchema.parse(parsedJson);
+  } catch (e) {
+    console.error("AI Comparison failed", e);
+    throw e;
+  }
+}
+
 
