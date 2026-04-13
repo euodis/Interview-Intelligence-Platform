@@ -6,9 +6,14 @@ import {
 // --- 1. СПРАВОЧНИКИ ---
 
 export const mockInterviewers: Interviewer[] = [
-  { id: 'int-1', name: 'Анна Соколова', role: 'Talent Acquisition Partner' },
-  { id: 'int-2', name: 'Дмитрий Волков', role: 'Staff Frontend Engineer' },
-  { id: 'int-3', name: 'Елена Морозова', role: 'Frontend Team Lead' },
+  { id: 'int-1', name: 'Анна Соколова', role: 'Lead HR' },
+  { id: 'int-2', name: 'Джон Доу', role: 'Senior Frontend' },
+  { id: 'int-3', name: 'Елена Петрова', role: 'System Architect' },
+  { id: 'int-4', name: 'Максим Иванов', role: 'Frontend Lead' },
+  { id: 'int-5', name: 'Алексей Смирнов', role: 'Backend Lead' },
+  { id: 'int-6', name: 'Сара Коннор', role: 'Product Design' },
+  { id: 'int-7', name: 'Давид Гольдман', role: 'Engineering Manager' },
+  { id: 'int-8', name: 'Елена Бош', role: 'Data Engineer' }
 ];
 
 export const mockCompetencies: Competency[] = [

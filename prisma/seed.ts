@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import {
   mockCompetencies,
   mockVacancies,
@@ -16,13 +17,29 @@ async function main() {
   console.log('Seeding database...');
 
   // 1. Users (Interviewers)
+  const defaultPassword = await bcrypt.hash('password', 10);
+  
+  const getEmailForInt = (id: string) => {
+     if (id === 'int-1') return 'hr@demo.local';
+     if (id === 'int-2') return 'interviewer1@demo.local';
+     if (id === 'int-3') return 'interviewer2@demo.local';
+     if (id === 'int-4') return 'frontend@demo.local';
+     if (id === 'int-5') return 'backend@demo.local';
+     if (id === 'int-6') return 'design@demo.local';
+     if (id === 'int-7') return 'em@demo.local';
+     if (id === 'int-8') return 'data@demo.local';
+     return `${id}@demo.local`;
+  }
+
   for (const int of mockInterviewers) {
+    const email = getEmailForInt(int.id);
     await prisma.user.upsert({
-      where: { email: `${int.id}@example.com` },
-      update: {},
+      where: { email },
+      update: { password: defaultPassword },
       create: {
         id: int.id,
-        email: `${int.id}@example.com`,
+        email: email,
+        password: defaultPassword,
         name: int.name,
         role: int.id === 'int-1' ? 'HR' : 'INTERVIEWER',
       },

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 export async function getCandidatesByVacancyId(vacancyId: string) {
   const applications = await prisma.application.findMany({
@@ -63,6 +64,11 @@ export async function getCandidateById(id: string) {
 }
 
 export async function createCandidate(data: { name: string, email: string, vacancyId: string, currentCompany?: string, experienceYears?: number, resumeSummary?: string }) {
+  const session = await auth();
+  if (!session?.user || (session.user as any).role !== 'HR') {
+    throw new Error('Unauthorized');
+  }
+
   const application = await prisma.application.create({
     data: {
       name: data.name,
@@ -89,4 +95,46 @@ export async function createCandidate(data: { name: string, email: string, vacan
 
   revalidatePath(`/vacancies/${data.vacancyId}`);
   return application;
+}
+
+export async function updateCandidateInterviewers(applicationId: string, interviewerIds: string[]) {
+   const session = await auth();
+   if (!session?.user || (session.user as any).role !== 'HR') {
+     throw new Error('Unauthorized: Only HR can assign interviewers');
+   }
+ 
+   if (interviewerIds.length < 2 || interviewerIds.length > 4) {
+      throw new Error('Необходимо назначить от 2 до 4 экспертов');
+   }
+
+   const existingSessions = await prisma.interviewSession.findMany({
+      where: { applicationId },
+      include: { evaluations: true }
+   });
+
+   const hasStarted = existingSessions.some(s => s.status === 'ЗАВЕРШЕНО' || s.evaluations.length > 0);
+   if (hasStarted) {
+      throw new Error('Изменение состава экспертов запрещено: интервью уже начаты');
+   }
+ 
+   await prisma.$transaction(async (tx) => {
+      await tx.interviewAssignment.deleteMany({ where: { applicationId } });
+      await tx.interviewSession.deleteMany({ where: { applicationId } });
+
+      for (const interviewerId of interviewerIds) {
+         await tx.interviewAssignment.create({
+            data: { applicationId, interviewerId }
+         });
+         await tx.interviewSession.create({
+            data: {
+               applicationId,
+               interviewerId,
+               status: 'ОЖИДАЕТ'
+            }
+         });
+      }
+   });
+
+   revalidatePath(`/candidates/${applicationId}`);
+   revalidatePath(`/`);
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createCandidate } from "@/actions/candidate.actions";
 
 // Added dynamic time formatting function
 const timeAgo = (date: Date) => {
@@ -12,7 +14,13 @@ const timeAgo = (date: Date) => {
   return new Date(date).toLocaleDateString('ru-RU');
 };
 
-export default function VacancyDashboardClient({ vacancy, candidates }: { vacancy: any, candidates: any[] }) {
+export default function VacancyDashboardClient({ vacancy, candidates, userRole }: { vacancy: any, candidates: any[], userRole: string }) {
+  const isHR = userRole === 'HR';
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [showAddCandidate, setShowAddCandidate] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
   // Application Data
   const completedSessions = candidates.flatMap(c => c.sessions).filter((s:any) => s.status === 'ЗАВЕРШЕНО');
   
@@ -147,7 +155,17 @@ export default function VacancyDashboardClient({ vacancy, candidates }: { vacanc
          <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold tracking-tight text-zinc-900">Список кандидатов</h2>
             
-            {/* Filters */}
+            {/* Add Candidate + Filters */}
+            <div className="flex items-center gap-3">
+               {isHR && (
+                 <button
+                   onClick={() => setShowAddCandidate(true)}
+                   className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                   Добавить кандидата
+                 </button>
+               )}
             <div className="flex items-center gap-2">
                <span className="text-sm text-zinc-500">Фильтр:</span>
                <select 
@@ -162,7 +180,7 @@ export default function VacancyDashboardClient({ vacancy, candidates }: { vacanc
                   <option value="ОТКАЗ">Отказ</option>
                </select>
             </div>
-         </div>
+            </div>         </div>
 
          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-x-auto">
             <table className="w-full text-sm text-left min-w-max">
@@ -273,6 +291,73 @@ export default function VacancyDashboardClient({ vacancy, candidates }: { vacanc
             </table>
          </div>
       </div>
+
+      {/* Add Candidate Modal */}
+      {showAddCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowAddCandidate(false)}>
+          <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-lg mx-4 p-8" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-zinc-900 mb-6">Добавить кандидата</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setAddError(null);
+                const formData = new FormData(e.currentTarget);
+                const name = formData.get('name') as string;
+                const email = formData.get('email') as string;
+                const currentCompany = formData.get('currentCompany') as string;
+                const experienceYears = parseInt(formData.get('experienceYears') as string) || undefined;
+
+                if (!name.trim()) { setAddError('Укажите имя кандидата'); return; }
+
+                startTransition(async () => {
+                  try {
+                    await createCandidate({
+                      name: name.trim(),
+                      email: email.trim() || `${Date.now()}@candidate.local`,
+                      vacancyId: vacancy.id,
+                      currentCompany: currentCompany.trim() || undefined,
+                      experienceYears,
+                    });
+                    setShowAddCandidate(false);
+                    router.refresh();
+                  } catch (err: any) {
+                    setAddError(err.message || 'Ошибка при создании');
+                  }
+                });
+              }}
+              className="flex flex-col gap-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">ФИО *</label>
+                <input name="name" required className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" placeholder="Иван Иванов" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+                <input name="email" type="email" className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" placeholder="candidate@example.com" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Компания</label>
+                  <input name="currentCompany" className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" placeholder="Google" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Опыт (лет)</label>
+                  <input name="experienceYears" type="number" min="0" max="40" className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" placeholder="5" />
+                </div>
+              </div>
+              {addError && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{addError}</div>
+              )}
+              <div className="flex justify-end gap-3 mt-2">
+                <button type="button" onClick={() => setShowAddCandidate(false)} className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">Отмена</button>
+                <button type="submit" disabled={isPending} className="rounded-xl bg-zinc-900 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 transition-colors disabled:opacity-50">
+                  {isPending ? 'Создание...' : 'Создать'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

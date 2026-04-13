@@ -2,11 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DisagreementAnalyzer, { DisagreementConflict } from "@/components/DisagreementAnalyzer";
 import { getCandidateById } from "@/actions/candidate.actions";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import AssignInterviewersBlock from "./AssignInterviewersBlock";
 
 export default async function CandidateProfile({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
+  const authSession = await auth();
+  if (!authSession?.user) return null;
+
+  const userRole = (authSession.user as any).role;
+  const isHR = userRole === 'HR';
+  const isInterviewer = userRole === 'INTERVIEWER';
+
   const candidate = await getCandidateById(resolvedParams.id);
-  
   if (!candidate) return notFound();
 
   const vacancy = candidate.vacancy;
@@ -22,6 +31,11 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
 
   // Interviewers
   const assignedInterviewers = candidate.assignments.map(a => a.interviewer);
+
+  // Find if the current user (if interviewer) has a pending session for this candidate
+  const myPendingSession = isInterviewer 
+    ? allSessions.find(s => s.interviewerId === authSession.user!.id && s.status === 'ОЖИДАЕТ')
+    : null;
 
   // Compute Disagreements
   const conflicts: DisagreementConflict[] = [];
@@ -51,6 +65,15 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
       });
   }
 
+  // Fetch all available interviewers for assignment (HR only)
+  const allInterviewers = isHR ? await prisma.user.findMany({
+    where: { role: 'INTERVIEWER' },
+    select: { id: true, name: true, role: true }
+  }) : [];
+
+  // Check if any session has started (for freezing assignments)
+  const hasStartedInterviews = allSessions.some(s => s.status === 'ЗАВЕРШЕНО' || s.evaluations.length > 0);
+
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full pb-20">
       
@@ -59,7 +82,7 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
         <div className="text-sm font-medium text-zinc-500">
            <Link href="/" className="hover:text-zinc-900 transition-colors">Вакансии</Link> 
            <span className="mx-2">/</span> 
-           <Link href="/vacancies/vac-1" className="hover:text-zinc-900 transition-colors">{vacancy?.title || 'Unknown'}</Link>
+           <Link href={`/vacancies/${vacancy?.id}`} className="hover:text-zinc-900 transition-colors">{vacancy?.title || 'Unknown'}</Link>
            <span className="mx-2">/</span>
            <span className="text-zinc-900">{candidate.name}</span>
         </div>
@@ -82,9 +105,18 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
             <Link href={`/candidates/${candidate.id}/summary`} className="flex items-center gap-2 rounded-xl bg-violet-50 text-violet-700 px-4 py-2 font-medium shadow-sm hover:bg-violet-100 transition-colors">
                <span className="text-lg">✨</span> Полный ИИ-отчет
             </Link>
-            <button className="rounded-xl bg-zinc-900 px-5 py-2 font-medium text-white shadow-sm hover:bg-zinc-800 transition-colors">
-               Открыть протокол
-            </button>
+            {/* Interviewer: show "Start Interview" only if they have a pending session */}
+            {isInterviewer && myPendingSession && (
+              <Link href={`/interviews/${myPendingSession.id}`} className="rounded-xl bg-zinc-900 px-5 py-2 font-medium text-white shadow-sm hover:bg-zinc-800 transition-colors">
+                 Начать интервью
+              </Link>
+            )}
+            {/* HR: show a link to view completed protocols */}
+            {isHR && completedSessions.length > 0 && (
+              <Link href={`/interviews/${completedSessions[0].id}`} className="rounded-xl bg-zinc-100 border border-zinc-200 px-5 py-2 font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 transition-colors">
+                 Посмотреть протокол
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -124,6 +156,17 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
               </div>
           </div>
       </div>
+
+      {/* Assign Interviewers Block — HR only */}
+      {isHR && (
+        <AssignInterviewersBlock
+          applicationId={candidate.id}
+          currentInterviewerIds={assignedInterviewers.map((i: any) => i.id)}
+          allInterviewers={allInterviewers}
+          isFrozen={hasStartedInterviews}
+          sessions={allSessions.map(s => ({ id: s.id, interviewerId: s.interviewerId, status: s.status, interviewerName: s.interviewer?.name || 'N/A' }))}
+        />
+      )}
 
       {/* Dynamic Disagreement Tool */}
       <DisagreementAnalyzer candidateName={candidate.name} conflicts={conflicts} />

@@ -215,7 +215,7 @@ export default function VacancySetup() {
                                             checked={block.required}
                                             onChange={(e) => updateBlock(block.id, 'required', e.target.checked)}
                                         />
-                                        Required
+                                        Обязательно
                                     </label>
                                     <button
                                         title="Удалить блок"

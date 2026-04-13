@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 export async function submitInterviewProtocol(data: {
   sessionId: string;
@@ -9,6 +10,20 @@ export async function submitInterviewProtocol(data: {
   overallNotes: string;
   confidence: string;
 }) {
+  // Permission check: only the assigned interviewer can submit
+  const authSession = await auth();
+  if (!authSession?.user) throw new Error('Unauthorized');
+  
+  const interviewSession = await prisma.interviewSession.findUnique({
+    where: { id: data.sessionId }
+  });
+  if (!interviewSession) throw new Error('Session not found');
+  if (interviewSession.interviewerId !== authSession.user.id) {
+    throw new Error('Только назначенный интервьюер может отправить протокол');
+  }
+  if (interviewSession.status === 'ЗАВЕРШЕНО') {
+    throw new Error('Протокол уже был отправлен');
+  }
   // Use a transaction to ensure all evaluations are saved atomically
   await prisma.$transaction(async (tx) => {
      // 1. Update Session Status
@@ -61,13 +76,20 @@ export async function submitInterviewProtocol(data: {
 }
 
 export async function updateCandidateSummary(applicationId: string, summaryData: any) {
+   // Map discrepancies to discrepanciesText because the Prisma schema uses discrepanciesText
+   const { discrepancies, ...rest } = summaryData;
+   const mappedData = {
+      ...rest,
+      discrepanciesText: discrepancies
+   };
+
    // This would be called by the AI generation route/action.
    const summary = await prisma.candidateSummary.upsert({
       where: { applicationId },
-      update: summaryData,
+      update: mappedData,
       create: {
          applicationId,
-         ...summaryData
+         ...mappedData
       }
    });
 
