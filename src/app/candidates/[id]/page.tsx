@@ -50,9 +50,9 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
             <button className="flex items-center gap-2 rounded-xl bg-white border border-zinc-200 px-4 py-2 font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 transition-colors focus:ring-4 focus:ring-zinc-100">
                Сравнить с другими
             </button>
-            <button className="flex items-center gap-2 rounded-xl bg-violet-50 text-violet-700 px-4 py-2 font-medium shadow-sm hover:bg-violet-100 transition-colors">
+            <Link href={`/candidates/${candidate.id}/summary`} className="flex items-center gap-2 rounded-xl bg-violet-50 text-violet-700 px-4 py-2 font-medium shadow-sm hover:bg-violet-100 transition-colors">
                <span className="text-lg">✨</span> Полный ИИ-отчет
-            </button>
+            </Link>
             <button className="rounded-xl bg-zinc-900 px-5 py-2 font-medium text-white shadow-sm hover:bg-zinc-800 transition-colors">
                Открыть протокол
             </button>

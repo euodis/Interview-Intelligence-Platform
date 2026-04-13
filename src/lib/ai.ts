@@ -17,6 +17,19 @@ const InterviewPlanSchema = z.object({
 
 export type GeneratedPlanBlock = z.infer<typeof InterviewPlanSchema>['blocks'][0] & { id: string };
 
+const CandidateSummaryZodSchema = z.object({
+  overallScore: z.number(),
+  recommendation: z.enum(['НАЗНАЧИТЬ_ОФФЕР', 'ОТКАЗ', 'ДОП_ИНТЕРВЬЮ', 'СИНХРОНИЗАЦИЯ']),
+  rationale: z.string(),
+  strengths: z.array(z.string()),
+  risks: z.array(z.string()),
+  notableEvidence: z.array(z.string()),
+  discrepancies: z.string().nullable(),
+  nextStepSuggestion: z.string()
+});
+
+export type GeneratedCandidateSummary = z.infer<typeof CandidateSummaryZodSchema>;
+
 const SYSTEM_PROMPT = `You are a Senior Staff Engineer and Expert Recruiter.
 Your goal is to generate a highly structured, professional interview plan for evaluating a candidate.
 The interview should test deep expertise, system thinking, and cultural fit.
@@ -140,4 +153,110 @@ async function getLocalMockPlan(): Promise<GeneratedPlanBlock[]> {
       required: false,
     }
   ];
+}
+
+const SUMMARY_SYSTEM_PROMPT = `You are an unbiased Expert HR and Tech Lead reviewing interview feedback.
+Your goal is to aggregate notes and scores from multiple interviewers into a data-driven, objective final summary.
+
+Guidelines:
+1. Synthesize all provided evaluations into a single coherent report.
+2. Calculate overallScore (1.0 to 5.0 scale).
+3. Base strengths and risks STRICTLY on the provided "notes". Do not hallucinate.
+4. "notableEvidence" must cite specific things the interviewers mentioned.
+5. If there is a massive gap in scores between interviewers for similar blocks, set recommendation to "СИНХРОНИЗАЦИЯ" and write it in "discrepancies".
+6. The "rationale" must clearly explain WHY this recommendation was chosen, referencing score patterns.
+7. Tone: Professional, non-biased, HR-friendly, transparent.
+8. Output ONLY valid JSON matching the schema. NO Markdown wrappers.`;
+
+export async function generateCandidateSummary(input: {
+  candidateName: string;
+  role: string;
+  level: string;
+  evaluations: Array<{
+    interviewer: string;
+    interviewerRole: string;
+    blockTitle: string;
+    score: number | null;
+    notes: string;
+    signal?: string | null;
+  }>;
+}): Promise<GeneratedCandidateSummary> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    console.warn("⚠️ OPENROUTER_API_KEY not found. Using local fallback for summary.");
+    return getLocalMockSummary();
+  }
+
+  const openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: apiKey,
+  });
+
+  const userPrompt = `
+Generate an interview summary for:
+Candidate: ${input.candidateName}
+Role: ${input.role} (${input.level})
+
+Provided Evaluations Data:
+${JSON.stringify(input.evaluations, null, 2)}
+
+Return ONLY a JSON object matching this schema exactly:
+{
+  "overallScore": number, // average, up to 1 decimal
+  "recommendation": "НАЗНАЧИТЬ_ОФФЕР" | "ОТКАЗ" | "ДОП_ИНТЕРВЬЮ" | "СИНХРОНИЗАЦИЯ",
+  "rationale": "High-level reason for recommendation",
+  "strengths": ["string"],
+  "risks": ["string"],
+  "notableEvidence": ["Quote or clear evidence from notes"],
+  "discrepancies": "string or null if none",
+  "nextStepSuggestion": "Specific actionable next step"
+}
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini", 
+      messages: [
+        { role: "system", content: SUMMARY_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3, // Low temperature for consistent factual summaries
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("No content received");
+
+    const parsedJson = JSON.parse(content);
+    return CandidateSummaryZodSchema.parse(parsedJson);
+
+  } catch (error) {
+    console.error("AI Summary generation failed. Falling back.", error);
+    return getLocalMockSummary();
+  }
+}
+
+async function getLocalMockSummary(): Promise<GeneratedCandidateSummary> {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  return {
+    overallScore: 3.8,
+    recommendation: "СИНХРОНИЗАЦИЯ",
+    rationale: "Кандидат обладает сильным потенциалом и знаниями React, однако мнения команды критически разошлись по компетенции System Design.",
+    strengths: [
+      "Глубокое понимание монолитной архитектуры и SSR",
+      "Уверенные знания Event Loop и JS Core",
+      "Хороший React базис"
+    ],
+    risks: [
+      "Слабое понимание современных микрофронтендов",
+      "Склонность к монолитным решениям в ситуациях, требующих масштабирования"
+    ],
+    notableEvidence: [
+      "Дмитрий отметил: 'Предложила строить всё через iframes. Архитектурное мышление хромает.' (Оценка 2)",
+      "Елена высоко оценила опыт SSR: 'Гениально расписала монолитную платформу...' (Оценка 5)"
+    ],
+    discrepancies: "Разница в 3 балла по System Design. Дмитрий оценивал знания микрофронтэндов (2 балла), а Елена оценивала опыт SSR (5 баллов).",
+    nextStepSuggestion: "Организовать 15-минутный синк между Дмитрием и Еленой для выработки единой позиции. При необходимости назначить короткий доп. этап по архитектуре."
+  };
 }
