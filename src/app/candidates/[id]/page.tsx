@@ -1,6 +1,7 @@
 import { mockCandidates, mockSummaries, mockSessions, mockBlockEvaluations, mockPlans, mockInterviewers, mockVacancies } from "@/data/mocks";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DisagreementAnalyzer, { DisagreementConflict } from "@/components/DisagreementAnalyzer";
 
 export default async function CandidateProfile({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -21,6 +22,34 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
 
   // Interviewers
   const assignedInterviewers = allSessions.map(s => mockInterviewers.find(i => i.id === s.interviewerId)).filter(Boolean);
+
+  // Compute Disagreements
+  const conflicts: DisagreementConflict[] = [];
+  if (plan && completedSessions.length > 1) {
+      plan.blocks.forEach(block => {
+          const evalsForBlock = completedSessions.map(s => mockBlockEvaluations.find(e => e.sessionId === s.id && e.blockId === block.id)).filter(Boolean);
+          if (evalsForBlock.length > 1) {
+              const scores = evalsForBlock.map(e => e!.score);
+              const maxScore = Math.max(...scores);
+              const minScore = Math.min(...scores);
+              
+              if (maxScore - minScore >= 2) {
+                  conflicts.push({
+                      blockId: block.id,
+                      blockTitle: block.title,
+                      evaluations: evalsForBlock.map(e => {
+                          const inter = mockInterviewers.find(i => i.id === completedSessions.find(s => s.id === e!.sessionId)?.interviewerId);
+                          return {
+                              interviewer: inter?.name || 'Unknown',
+                              score: e!.score,
+                              notes: e!.notes
+                          }
+                      })
+                  });
+              }
+          }
+      });
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full pb-20">
@@ -96,26 +125,8 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
           </div>
       </div>
 
-      {/* Priority Disagreement Alert */}
-      {aiSummary?.discrepancies && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-6 flex items-start gap-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-              </div>
-              <div className="flex-shrink-0 bg-amber-100 text-amber-600 w-12 h-12 rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              </div>
-              <div className="z-10">
-                  <h3 className="text-lg font-bold text-amber-900 mb-1">Критическое расхождение (Discrepancy Alert)</h3>
-                  <p className="text-amber-800 font-medium leading-relaxed max-w-4xl">
-                     {aiSummary.discrepancies}
-                  </p>
-                  <button className="mt-3 text-sm font-bold text-amber-700 hover:text-amber-900 transition-colors uppercase tracking-wider">
-                     Разобрать детально &rarr;
-                  </button>
-              </div>
-          </div>
-      )}
+      {/* Dynamic Disagreement Tool */}
+      <DisagreementAnalyzer candidateName={candidate.name} conflicts={conflicts} />
 
       <div className="flex flex-col lg:flex-row gap-6 mt-2 items-start">
          

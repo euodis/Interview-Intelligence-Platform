@@ -30,6 +30,20 @@ const CandidateSummaryZodSchema = z.object({
 
 export type GeneratedCandidateSummary = z.infer<typeof CandidateSummaryZodSchema>;
 
+const DisagreementInterpretationSchema = z.object({
+  disagreements: z.array(
+    z.object({
+      blockTitle: z.string(),
+      reason: z.string(),
+      isRisk: z.boolean(),
+      recommendedAction: z.enum(['CALIBRATION', 'EXTRA_INTERVIEW', 'FOCUS_AREA']),
+      actionDescription: z.string(),
+    })
+  )
+});
+
+export type DisagreementInterpretation = z.infer<typeof DisagreementInterpretationSchema>['disagreements'][0];
+
 const SYSTEM_PROMPT = `You are a Senior Staff Engineer and Expert Recruiter.
 Your goal is to generate a highly structured, professional interview plan for evaluating a candidate.
 The interview should test deep expertise, system thinking, and cultural fit.
@@ -260,3 +274,82 @@ async function getLocalMockSummary(): Promise<GeneratedCandidateSummary> {
     nextStepSuggestion: "Организовать 15-минутный синк между Дмитрием и Еленой для выработки единой позиции. При необходимости назначить короткий доп. этап по архитектуре."
   };
 }
+
+const DISAGREEMENT_SYSTEM_PROMPT = `You are an internal HR Calibration Expert.
+You are given a case where interviewers evaluated the same candidate on the same competency but gave wildly different scores (difference >= 2).
+Your job is to read their notes and determine WHY they disagreed.
+Do not summarize. Interpret the core conflict.
+Was it because one interviewer asked a harder question? Or one focused on theory while the other focused on practice? Or are they evaluating different aspects of the same block?
+Assess if this is a systemic risk for hiring, and recommend an action.
+Output MUST be valid JSON.`;
+
+export async function analyzeDisagreements(payload: {
+  candidateName: string;
+  conflicts: Array<{
+    blockTitle: string;
+    evaluations: Array<{ interviewer: string; score: number; notes: string }>;
+  }>;
+}): Promise<DisagreementInterpretation[]> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    // Fallback Mock
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return payload.conflicts.map(c => ({
+      blockTitle: c.blockTitle,
+      reason: "Интервьюеры оценивали разные аспекты. Один сфокусировался на микрофронтендах (которых кандидат не знает), другой — на монолитном SSR (где кандидат силен).",
+      isRisk: false,
+      recommendedAction: "CALIBRATION",
+      actionDescription: "Провести 10-минутный синк (Calibration), чтобы решить, нужны ли проекту именно микрофронтенды или SSR-монолита достаточно."
+    }));
+  }
+
+  const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey });
+
+  const userPrompt = `
+Analyze these specific disagreements for candidate ${payload.candidateName}:
+${JSON.stringify(payload.conflicts, null, 2)}
+
+Return JSON matching this schema:
+{
+  "disagreements": [
+    {
+      "blockTitle": "string",
+      "reason": "Deep interpretation of why their notes/perspective differed",
+      "isRisk": boolean,
+      "recommendedAction": "CALIBRATION" | "EXTRA_INTERVIEW" | "FOCUS_AREA",
+      "actionDescription": "Actionable advice for the hiring manager"
+    }
+  ]
+}
+`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: DISAGREEMENT_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
+    
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("Empty response");
+    
+    const parsedJson = JSON.parse(content);
+    return DisagreementInterpretationSchema.parse(parsedJson).disagreements;
+  } catch (e) {
+    console.error("Disagreement AI failed", e);
+    // Silent fallback
+    return payload.conflicts.map(c => ({
+      blockTitle: c.blockTitle,
+      reason: "Ошибка парсинга. Вероятно, интервьюеры смотрели на компетенцию под разным углом.",
+      isRisk: true,
+      recommendedAction: "CALIBRATION",
+      actionDescription: "Собраться и обсудить оценки."
+    }));
+  }
+}
+
