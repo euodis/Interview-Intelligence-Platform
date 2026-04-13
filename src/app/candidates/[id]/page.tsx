@@ -1,35 +1,35 @@
-import { mockCandidates, mockSummaries, mockSessions, mockBlockEvaluations, mockPlans, mockInterviewers, mockVacancies } from "@/data/mocks";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DisagreementAnalyzer, { DisagreementConflict } from "@/components/DisagreementAnalyzer";
+import { getCandidateById } from "@/actions/candidate.actions";
 
 export default async function CandidateProfile({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const candidate = mockCandidates.find(c => c.id === resolvedParams.id);
+  const candidate = await getCandidateById(resolvedParams.id);
   
   if (!candidate) return notFound();
 
-  const vacancy = mockVacancies.find(v => v.id === candidate.vacancyId);
-  const plan = mockPlans.find(p => p.vacancyId === vacancy?.id);
-  const aiSummary = mockSummaries.find(s => s.candidateId === candidate.id);
+  const vacancy = candidate.vacancy;
+  const plan = vacancy.interviewPlan;
+  const aiSummary = candidate.summary;
   
   // All sessions assigned to this candidate
-  const allSessions = mockSessions.filter(s => s.candidateId === candidate.id);
+  const allSessions = candidate.sessions;
   const completedSessions = allSessions.filter(s => s.status === 'ЗАВЕРШЕНО');
   
   // Progress
   const progressPercent = allSessions.length === 0 ? 0 : Math.round((completedSessions.length / allSessions.length) * 100);
 
   // Interviewers
-  const assignedInterviewers = allSessions.map(s => mockInterviewers.find(i => i.id === s.interviewerId)).filter(Boolean);
+  const assignedInterviewers = candidate.assignments.map(a => a.interviewer);
 
   // Compute Disagreements
   const conflicts: DisagreementConflict[] = [];
   if (plan && completedSessions.length > 1) {
       plan.blocks.forEach(block => {
-          const evalsForBlock = completedSessions.map(s => mockBlockEvaluations.find(e => e.sessionId === s.id && e.blockId === block.id)).filter(Boolean);
+          const evalsForBlock = completedSessions.map(s => s.evaluations.find(e => e.blockId === block.id)).filter(Boolean);
           if (evalsForBlock.length > 1) {
-              const scores = evalsForBlock.map(e => e!.score);
+              const scores = evalsForBlock.map(e => e!.score!);
               const maxScore = Math.max(...scores);
               const minScore = Math.min(...scores);
               
@@ -38,11 +38,11 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
                       blockId: block.id,
                       blockTitle: block.title,
                       evaluations: evalsForBlock.map(e => {
-                          const inter = mockInterviewers.find(i => i.id === completedSessions.find(s => s.id === e!.sessionId)?.interviewerId);
+                          const ownerSess = completedSessions.find(s => s.id === e!.sessionId);
                           return {
-                              interviewer: inter?.name || 'Unknown',
-                              score: e!.score,
-                              notes: e!.notes
+                              interviewer: ownerSess?.interviewer?.name || 'Unknown',
+                              score: e!.score!,
+                              notes: e!.notes || ''
                           }
                       })
                   });
@@ -194,12 +194,12 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
                                 <tr>
                                   <th className="px-6 py-4 min-w-[200px]">Блок компетенции</th>
                                   {completedSessions.map(session => {
-                                      const inter = mockInterviewers.find(i => i.id === session.interviewerId);
+                                      const inter = session.interviewer;
                                       return (
                                           <th key={session.id} className="px-4 py-4 min-w-[150px] border-l border-zinc-100">
                                              <div className="flex flex-col gap-1">
-                                                <span className="text-zinc-900">{inter?.name}</span>
-                                                <span className="text-zinc-400 font-medium normal-case">{inter?.role}</span>
+                                                <span className="text-zinc-900">{inter.name}</span>
+                                                <span className="text-zinc-400 font-medium normal-case">{inter.role}</span>
                                              </div>
                                           </th>
                                       );
@@ -211,9 +211,9 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
                                     return (
                                         <tr key={block.id} className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50 transition-colors">
                                             <td className="px-6 py-5 font-semibold text-zinc-900 w-1/3">{block.title}</td>
-                                            {completedSessions.map(session => {
-                                               const ev = mockBlockEvaluations.find(e => e.sessionId === session.id && e.blockId === block.id);
-                                               if (!ev) {
+                                             {completedSessions.map(session => {
+                                               const ev = session.evaluations.find(e => e.blockId === block.id);
+                                               if (!ev || ev.score === null) {
                                                    return <td key={session.id} className="px-4 py-5 border-l border-zinc-100 text-zinc-400 italic text-xs align-middle">Нет оценки</td>;
                                                }
             
@@ -223,7 +223,7 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
                                                             <span className={`inline-flex w-8 h-8 items-center justify-center rounded-lg font-bold shadow-sm ring-1 ring-inset
                                                                 ${ev.score >= 4 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : ev.score <= 2 ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-amber-50 text-amber-700 ring-amber-200'}
                                                             `}>{ev.score}</span>
-                                                            <p className="text-sm text-zinc-600 mt-1 leading-relaxed line-clamp-3 hover:line-clamp-none cursor-pointer" title={ev.notes}>{ev.notes}</p>
+                                                            <p className="text-sm text-zinc-600 mt-1 leading-relaxed line-clamp-3 hover:line-clamp-none cursor-pointer" title={ev.notes || ''}>{ev.notes}</p>
                                                         </div>
                                                    </td>
                                                );

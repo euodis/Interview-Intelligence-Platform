@@ -1,8 +1,15 @@
-import { mockSessions, mockCandidates, mockVacancies } from "@/data/mocks";
+import { prisma } from "@/lib/db";
 import Link from "next/link";
 
-export default function InterviewerDashboard() {
-  const sessions = mockSessions;
+export default async function InterviewerDashboard() {
+  const sessions = await prisma.interviewSession.findMany({
+    include: {
+       application: {
+         include: { vacancy: true }
+       }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -15,8 +22,8 @@ export default function InterviewerDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {sessions.map(session => {
-            const candidate = mockCandidates.find(c => c.id === session.candidateId);
-            const vacancy = mockVacancies.find(v => v.id === candidate?.vacancyId);
+            const candidate = session.application;
+            const vacancy = candidate?.vacancy;
             return (
                 <div key={session.id} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">

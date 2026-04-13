@@ -22,7 +22,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="flex flex-1">
         <aside className="hidden w-64 flex-col border-r border-zinc-200 bg-white p-4 sm:flex shrink-0">
           <nav className="flex flex-col gap-2">
-            <Link href="/vacancies/vac-1" className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors">
+            <Link href="/" className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors">
               Дашборд Вакансии
             </Link>
             <Link href="/vacancies/new" className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors">

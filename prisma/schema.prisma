@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("INTERVIEWER") // "ADMIN", "HR", "INTERVIEWER"
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  interviewerAssignments InterviewAssignment[]
+  interviewSessions      InterviewSession[]
+  auditEvents            AuditEvent[]
+}
+
+model Competency {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  vacancies         VacancyCompetency[]
+  interviewBlocks   InterviewBlock[]
+}
+
+model Vacancy {
+  id           String   @id @default(cuid())
+  title        String
+  level        String   // "Middle" | "Senior" | "Lead"
+  status       String   @default("АКТИВНА") // "АКТИВНА" | "ЗАКРЫТА"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  competencies  VacancyCompetency[]
+  interviewPlan InterviewPlan?
+  applications  Application[]
+}
+
+model VacancyCompetency {
+  vacancyId    String
+  competencyId String
+  vacancy      Vacancy    @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@id([vacancyId, competencyId])
+}
+
+model Application {
+  id              String   @id @default(cuid())
+  vacancyId       String
+  name            String
+  contactEmail    String?
+  status          String   @default("НОВЫЙ") // 'НОВЫЙ' | 'ИНТЕРВЬЮ' | 'ОЦЕНЕН' | 'ОТКЛОНЕН' | 'ПРИНЯТ' | 'ДОП_ЭТАП'
+  currentCompany  String?
+  experienceYears Int?
+  resumeSummary   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  vacancy         Vacancy               @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  assignments     InterviewAssignment[]
+  sessions        InterviewSession[]
+  summary         CandidateSummary?
+  disagreementFlags DisagreementFlag[]
+}
+
+model InterviewPlan {
+  id        String   @id @default(cuid())
+  vacancyId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vacancy   Vacancy          @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  blocks    InterviewBlock[]
+}
+
+model InterviewBlock {
+  id             String   @id @default(cuid())
+  planId         String
+  competencyId   String?
+  title          String
+  goal           String?
+  required       Boolean  @default(true)
+
+  plan           InterviewPlan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  competency     Competency?       @relation(fields: [competencyId], references: [id], onDelete: SetNull)
+  questions      InterviewQuestion[]
+  evaluations    BlockEvaluation[]
+}
+
+model InterviewQuestion {
+  id      String @id @default(cuid())
+  blockId String
+  text    String
+
+  block   InterviewBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+}
+
+model InterviewAssignment {
+  id            String   @id @default(cuid())
+  applicationId String
+  interviewerId String
+  assignedAt    DateTime @default(now())
+
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer   User        @relation(fields: [interviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, interviewerId])
+}
+
+model InterviewSession {
+  id            String   @id @default(cuid())
+  applicationId String
+  interviewerId String
+  status        String   @default("ОЖИДАЕТ") // "ОЖИДАЕТ" | "ЗАВЕРШЕНО"
+  scheduledAt   DateTime?
+  overallNotes  String?
+  confidence    String?   // "HIGH" | "MEDIUM" | "LOW"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer   User              @relation(fields: [interviewerId], references: [id], onDelete: Cascade)
+  evaluations   BlockEvaluation[]
+}
+
+model BlockEvaluation {
+  id        String   @id @default(cuid())
+  sessionId String
+  blockId   String
+  score     Int?      // 1-5
+  notes     String?
+  signal    String?   // "STRONG" | "MIXED" | "CONCERN"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  block     InterviewBlock   @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, blockId])
+}
+
+model CandidateSummary {
+  id                 String   @id @default(cuid())
+  applicationId      String   @unique
+  overallScore       Float
+  recommendation     String   // "НАЗНАЧИТЬ_ОФФЕР" | "ОТКАЗ" | "ДОП_ИНТЕРВЬЮ" | "СИНХРОНИЗАЦИЯ"
+  rationale          String?
+  strengths          String[]
+  risks              String[]
+  notableEvidence    String[]
+  discrepanciesText  String?
+  nextStepSuggestion String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model DisagreementFlag {
+  id                String   @id @default(cuid())
+  applicationId     String
+  blockTitle        String
+  reason            String
+  isRisk            Boolean
+  recommendedAction String
+  actionDescription String
+  createdAt         DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  entityType  String   // e.g. "Vacancy", "Application", "InterviewSession"
+  entityId    String
+  action      String   // "CREATED", "UPDATED", "AI_GENERATED"
+  details     String?  // JSON stringified payload or brief description
+  actorId     String?  
+  createdAt   DateTime @default(now())
+
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+}

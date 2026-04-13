@@ -87,8 +87,8 @@ export const mockCandidates: Candidate[] = [
   { id: 'cand-1', vacancyId: 'vac-1', name: 'Алексей Смирнов', status: 'ОЦЕНЕН', currentCompany: 'Tinkoff', experienceYears: 6 },
   { id: 'cand-2', vacancyId: 'vac-1', name: 'Марина Кравец', status: 'ОЦЕНЕН', currentCompany: 'Yandex', experienceYears: 7 },
   { id: 'cand-3', vacancyId: 'vac-1', name: 'Денис Попов', status: 'ОЦЕНЕН', currentCompany: 'Startup "FinUp"', experienceYears: 4 },
-  { id: 'cand-4', vacancyId: 'vac-1', name: 'Олег Тихонов', status: 'ДОП_ЭТАП', currentCompany: 'EPAM', experienceYears: 8 },
-  { id: 'cand-5', vacancyId: 'vac-1', name: 'Кирилл Котов', status: 'ИНТЕРВЬЮ', currentCompany: 'Avito', experienceYears: 5 },
+  { id: 'cand-4', vacancyId: 'vac-1', name: 'Олег Тихонов', status: 'ОЦЕНЕН', currentCompany: 'EPAM', experienceYears: 8 },
+  { id: 'cand-5', vacancyId: 'vac-1', name: 'Кирилл Котов', status: 'В ПРОЦЕССЕ', currentCompany: 'Avito', experienceYears: 5 },
 ];
 
 // --- 4. СЕССИИ (Интервью назначенное/завершенное) ---
@@ -149,6 +149,12 @@ export const mockSummaries: CandidateSummary[] = [
     risks: ['Небольшие пробелы в tooling (но не критично)'],
     discrepancies: null,
     recommendation: 'НАЗНАЧИТЬ_ОФФЕР',
+    rationale: 'Кандидат продемонстрировал исключительные технические знания, уверенное владение архитектурными паттернами и отличные лидерские качества. Все интервьюеры единогласно рекомендуют найм на уровень Senior.',
+    notableEvidence: [
+       '"Отличные знания Fiber и оптимизации рендеринга. Привел отличные примеры из своего текущего проекта." (React Architecture)',
+       '"Ярко выраженные лидерские качества, много менторит." (Engineering Culture)'
+    ],
+    nextStepSuggestion: 'Подготовить сильный оффер по верхней границе вилки для кандидатов уровня Senior. Утвердить желаемую дату выхода.'
   },
   // Кандидат 2 (Расхождения)
   {
@@ -159,16 +165,28 @@ export const mockSummaries: CandidateSummary[] = [
     risks: ['Слабое понимание современных подходов к микрофронтендам'],
     discrepancies: 'Обнаружено расхождение по блоку "Frontend System Design" (разница в 3 балла). Дмитрий (Staff Engineer) оценивал знание микрофронтендов и поставил 2, а Елена (Team Lead) высоко оценила опыт работы с SSR-монолитом и поставила 5 балов.',
     recommendation: 'СИНХРОНИЗАЦИЯ',
+    rationale: 'Кандидат является сильным инженером (3.8/5), но в команде нет единого мнения о том, отвечает ли её архитектурный бэкграунд текущим вызовам перехода на микрофронтенды. Необходима синхронизация экспертов для выработки общего решения.',
+    notableEvidence: [
+       '"Совсем не справилась с задачей микрофронтендов... Архитектурное мышление хромает." (Оценка 2)',
+       '"Гениально расписала монолитную платформу и SSR. Прекрасный кандидат." (Оценка 5)'
+    ],
+    nextStepSuggestion: 'Организовать 15-минутный Calibration-звонок между Дмитрием и Еленой для разрешения конфликта до принятия решения об оффере.'
   },
   // Кандидат 3 (Слабый)
   {
     id: 'sum-3',
     candidateId: 'cand-3',
     overallScore: 2.3,
-    strengths: ['Опыт работы в продуктовых командах'],
+    strengths: ['Базовый опыт продуктовой разработки'],
     risks: ['Слабые знания Core JS (асинхронность)', 'Поверхностное знание React хуков', 'Слабо развиты софт-скиллы'],
     discrepancies: null,
     recommendation: 'ОТКАЗ',
+    rationale: 'Кандидат не дотягивает до уровня Senior. Не продемонстрировано глубокого понимания механики работы React и JS Core, что является критичным для данной позиции.',
+    notableEvidence: [
+       '"Не смог объяснить, почему useCallback не является панацеей от потери производительности." (React Architecture)',
+       '"Путается в промисах и асинхронности." (JavaScript Execution)'
+    ],
+    nextStepSuggestion: 'Направить стандартный вежливый отказ кандидату. Рекомендовать подтянуть теоретическую базу.'
   },
   // Кандидат 4 (Доп этап)
   {
@@ -179,5 +197,10 @@ export const mockSummaries: CandidateSummary[] = [
     risks: ['Сессия System Design сорвана из-за нехватки времени', 'Остается риск непопадания в уровень Senior из-за отсутствия данных по архитектуре'],
     discrepancies: null,
     recommendation: 'ДОП_ИНТЕРВЬЮ',
+    rationale: 'Несмотря на хорошие показатели по профильной части (React), критический блок System Design не был покрыт должным образом, что не позволяет выставить финальную оценку уровня Senior.',
+    notableEvidence: [
+       '"Не успели разобрать System Design из-за того, что закопались в React... практический опыт неясен." (System Design)'
+    ],
+    nextStepSuggestion: 'Назначить дополнительное 45-минутное интервью строго по System Design.'
   }
 ];
