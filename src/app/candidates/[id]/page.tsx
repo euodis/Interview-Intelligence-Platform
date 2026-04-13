@@ -68,8 +68,8 @@ export default async function CandidateProfile({ params }: { params: Promise<{ i
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 flex items-center gap-3">
               {candidate.name}
-              <span className={`px-3 py-1 text-sm font-bold rounded-full uppercase tracking-widest
-                  ${candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-200 text-zinc-800' : 'bg-blue-100 text-blue-800'}
+              <span className={`px-2.5 py-1 text-[11px] font-black rounded-full uppercase tracking-widest
+                  ${candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-800 text-white shadow-sm' : 'bg-blue-100 text-blue-800'}
               `}>{candidate.status}</span>
             </h1>
             <p className="text-lg text-zinc-500">{candidate.currentCompany} • {candidate.experienceYears} лет опыта</p>

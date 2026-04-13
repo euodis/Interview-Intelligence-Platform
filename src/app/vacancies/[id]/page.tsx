@@ -203,8 +203,8 @@ export default function VacancyDetails({ params }: { params: Promise<{ id: strin
                         
                         {/* Status */}
                         <td className="px-6 py-4">
-                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                              ${row.candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-200 text-zinc-800' : 'bg-blue-50 text-blue-700'}
+                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-widest
+                              ${row.candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-800 text-white shadow-sm' : 'bg-blue-100 text-blue-800'}
                            `}>
                               {row.candidate.status}
                            </span>

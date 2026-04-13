@@ -111,8 +111,38 @@ export default function CandidateSummaryPage({ params }: { params: Promise<{ id:
       {/* 2. Content */}
       {isGenerating && (
           <div className="flex flex-col gap-6 animate-pulse">
-             <div className="h-64 bg-zinc-100 rounded-2xl w-full"></div>
-             <div className="h-48 bg-zinc-100 rounded-2xl w-full"></div>
+             
+             {/* VERDICT CARD SKELETON */}
+             <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm flex flex-col md:flex-row gap-8 items-center md:items-stretch">
+                <div className="flex flex-col items-center justify-center shrink-0 w-48 border-r border-zinc-50 pr-4">
+                   <div className="h-3 bg-zinc-200 rounded w-24 mb-4"></div>
+                   <div className="h-20 bg-zinc-200 rounded w-20"></div>
+                   <div className="h-6 bg-zinc-200 rounded-full w-full mt-4"></div>
+                </div>
+                
+                <div className="flex flex-col gap-4 justify-center w-full">
+                   <div className="h-5 bg-zinc-200 rounded w-64 mb-2"></div>
+                   <div className="h-4 bg-zinc-100 rounded w-full"></div>
+                   <div className="h-4 bg-zinc-100 rounded w-full"></div>
+                   <div className="h-4 bg-zinc-100 rounded w-3/4"></div>
+                </div>
+             </div>
+
+             {/* PROS AND CONS SKELETON */}
+             <div className="grid md:grid-cols-2 gap-6">
+                 <div className="rounded-xl border border-zinc-100 bg-zinc-50/30 p-6 flex flex-col gap-3">
+                    <div className="h-4 bg-zinc-200 rounded w-48 mb-2"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-full"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-5/6"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-4/5"></div>
+                 </div>
+                 <div className="rounded-xl border border-zinc-100 bg-zinc-50/30 p-6 flex flex-col gap-3">
+                    <div className="h-4 bg-zinc-200 rounded w-48 mb-2"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-full"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-9/12"></div>
+                    <div className="h-3 bg-zinc-100 rounded w-full"></div>
+                 </div>
+             </div>
           </div>
       )}
 
