@@ -3,49 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { generateInterviewPlan, GeneratedPlanBlock } from "@/lib/ai";
 
 // Local types for the builder
-interface BuilderBlock {
-  id: string;
-  title: string;
-  goal: string;
-  questions: string[];
-  required: boolean;
+interface BuilderBlock extends GeneratedPlanBlock {
+  // Inherits id, title, goal, questions, required
 }
-
-const mockAIResponse: BuilderBlock[] = [
-  {
-    id: "b-1",
-    title: "React Architecture & Patterns",
-    goal: "Evaluate deep understanding of React ecosystem, performance characteristics, and ability to design complex frontend apps.",
-    questions: [
-      "Как работает алгоритм реконсиляции и Fiber?",
-      "Приведите пример, когда useMemo/useCallback скорее навредят, чем помогут.",
-      "Как организовать стейт в приложении с множеством потоков данных?"
-    ],
-    required: true,
-  },
-  {
-    id: "b-2",
-    title: "System Design",
-    goal: "Check the ability to build scalable architecture, choose rendering strategies, and handle CI/CD pipelines.",
-    questions: [
-      "Спроектируйте архитектуру стриминговой платформы (напр., Twitch).",
-      "Когда стоит выбрать SSR, а когда SSG или SPA?",
-    ],
-    required: true,
-  },
-  {
-    id: "b-3",
-    title: "Soft Skills & Engineering Culture",
-    goal: "Assess mentorship experience, conflict resolution, and stakeholder management.",
-    questions: [
-      "Как вы проводите код-ревью для Junior разработчиков?",
-      "Расскажите о случае, когда вам пришлось спорить с бизнесом из-за технического долга."
-    ],
-    required: false,
-  }
-];
 
 export default function VacancySetup() {
   const router = useRouter();
@@ -62,17 +25,25 @@ export default function VacancySetup() {
   const [blocks, setBlocks] = useState<BuilderBlock[]>([]);
 
   // Handlers
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!roleTitle || !competencies) return;
     setIsGenerating(true);
     setHasGenerated(false);
     
-    // Simulate AI Generation
-    setTimeout(() => {
-        setBlocks(JSON.parse(JSON.stringify(mockAIResponse))); // Deep copy
-        setIsGenerating(false);
+    try {
+        const aiBlocks = await generateInterviewPlan({
+            role: roleTitle,
+            level: level,
+            competencies: competencies,
+            context: context
+        });
+        setBlocks(aiBlocks);
         setHasGenerated(true);
-    }, 2000);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsGenerating(false);
+    }
   };
 
   const updateBlock = (blockId: string, field: keyof BuilderBlock, value: any) => {

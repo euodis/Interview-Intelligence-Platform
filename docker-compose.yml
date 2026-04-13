@@ -9,6 +9,8 @@ services:
       - ./:/app
     ports:
       - "3000:3000"
+    env_file:
+      - .env.local
     command: npm run dev
     environment:
       - NODE_ENV=development
