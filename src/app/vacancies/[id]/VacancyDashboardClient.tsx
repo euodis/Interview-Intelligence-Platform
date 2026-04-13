@@ -216,11 +216,13 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
                         
                         {/* Status */}
                         <td className="px-6 py-4">
-                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-widest
-                              ${row.candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-800 text-white shadow-sm' : 'bg-blue-100 text-blue-800'}
-                           `}>
-                              {row.candidate.status}
-                           </span>
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm
+                                 ${row.candidate.status === 'ОЦЕНЕН' ? 'bg-zinc-900 text-white' : 
+                                   row.candidate.status === 'ИНТЕРВЬЮ' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                   'bg-blue-50 text-blue-700 border border-blue-200'}
+                              `}>
+                                 {row.candidate.status}
+                              </span>
                         </td>
 
                         {/* Interviewers */}
@@ -274,17 +276,15 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
                         </td>
 
                         {/* Action */}
-                        <td className="px-6 py-4 text-right">
-                           {row.summary || row.candidate.status === 'ОЦЕНЕН' ? (
-                              <Link href={`/candidates/${row.candidate.id}`} className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition-colors">
-                                 Отчет
+                           <td className="px-6 py-4 text-right">
+                              <Link href={`/candidates/${row.candidate.id}`} className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-xs font-semibold shadow-sm transition-all
+                                 ${row.summary || row.candidate.status === 'ОЦЕНЕН' 
+                                   ? 'bg-zinc-900 text-white hover:bg-zinc-800' 
+                                   : 'bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-50'}
+                              `}>
+                                 {row.summary || row.candidate.status === 'ОЦЕНЕН' ? 'Отчет' : 'Профиль'}
                               </Link>
-                           ) : (
-                              <button disabled className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-400">
-                                 В процессе
-                              </button>
-                           )}
-                        </td>
+                           </td>
                      </tr>
                   ))}
                </tbody>

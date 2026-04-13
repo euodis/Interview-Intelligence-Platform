@@ -118,6 +118,12 @@ export async function updateCandidateInterviewers(applicationId: string, intervi
    }
  
    await prisma.$transaction(async (tx) => {
+      // Get current candidate to check status
+      const candidate = await tx.application.findUnique({
+         where: { id: applicationId },
+         select: { status: true }
+      });
+
       await tx.interviewAssignment.deleteMany({ where: { applicationId } });
       await tx.interviewSession.deleteMany({ where: { applicationId } });
 
@@ -131,6 +137,14 @@ export async function updateCandidateInterviewers(applicationId: string, intervi
                interviewerId,
                status: 'ОЖИДАЕТ'
             }
+         });
+      }
+
+      // Transition status if new
+      if (candidate?.status === 'НОВЫЙ') {
+         await tx.application.update({
+            where: { id: applicationId },
+            data: { status: 'ИНТЕРВЬЮ' }
          });
       }
    });

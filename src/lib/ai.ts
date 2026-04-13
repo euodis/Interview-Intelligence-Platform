@@ -51,9 +51,10 @@ The interview should test deep expertise, system thinking, and cultural fit.
 Guidelines for output:
 1. Divide the interview into logical technical/soft blocks (usually 3-5 blocks).
 2. For each block, provide a concise clear \`title\` and a specific \`goal\` (what exactly are we testing?).
-3. Provide 2-5 \`questions\` per block. Questions MUST NOT be generic theory. They must be practical, scenario-based, and help compare candidates (e.g. "How would you design X?", "What are the tradeoffs between A and B?").
-4. Determine if the block is \`required\` (true for core competencies, false for optional/bonus skills).
-5. Output ONLY valid JSON matching the requested schema. No markdown wrappers, no explanations.`;
+3. Provide 2-5 \`questions\` per block. Questions MUST NOT be generic theory. They must be practical, scenario-based, and help compare candidates.
+4. ALL internal strings (titles, goals, questions) MUST BE IN RUSSIAN language.
+5. Determine if the block is \`required\` (true for core competencies, false for optional/bonus skills).
+6. Output ONLY valid JSON matching the requested schema. No markdown wrappers, no explanations.`;
 
 /**
  * Generates an Interview Plan using OpenRouter (OpenAI SDK compatible).
@@ -79,7 +80,7 @@ export async function generateInterviewPlan(input: {
   });
 
   const userPrompt = `
-Generate an interview plan for the following vacancy:
+Generate an interview plan for the following vacancy in RUSSIAN:
 Role: ${input.role}
 Level: ${input.level}
 Competencies: ${input.competencies}
@@ -89,9 +90,9 @@ Return ONLY a JSON object with this shape:
 {
   "blocks": [
     {
-      "title": "Block Name",
-      "goal": "Why we ask this",
-      "questions": ["Q1", "Q2"],
+      "title": "Название блока на русском",
+      "goal": "Цель блока на русском",
+      "questions": ["Вопрос 1 на русском", "Вопрос 2 на русском"],
       "required": true
     }
   ]
@@ -173,12 +174,12 @@ const SUMMARY_SYSTEM_PROMPT = `You are an unbiased Expert HR and Tech Lead revie
 Your goal is to aggregate notes and scores from multiple interviewers into a data-driven, objective final summary.
 
 Guidelines:
-1. Synthesize all provided evaluations into a single coherent report.
+1. Synthesize all provided evaluations into a single coherent report in RUSSIAN.
 2. Calculate overallScore (1.0 to 5.0 scale).
 3. Base strengths and risks STRICTLY on the provided "notes". Do not hallucinate.
-4. "notableEvidence" must cite specific things the interviewers mentioned.
+4. "notableEvidence" must cite specific things the interviewers mentioned (in Russian).
 5. If there is a massive gap in scores between interviewers for similar blocks, set recommendation to "СИНХРОНИЗАЦИЯ" and write it in "discrepancies".
-6. The "rationale" must clearly explain WHY this recommendation was chosen, referencing score patterns.
+6. The "rationale" must clearly explain WHY this recommendation was chosen in RUSSIAN.
 7. Tone: Professional, non-biased, HR-friendly, transparent.
 8. Output ONLY valid JSON matching the schema. NO Markdown wrappers.`;
 
@@ -208,23 +209,23 @@ export async function generateCandidateSummary(input: {
   });
 
   const userPrompt = `
-Generate an interview summary for:
+Generate an interview summary for the following candidate in RUSSIAN:
 Candidate: ${input.candidateName}
 Role: ${input.role} (${input.level})
 
 Provided Evaluations Data:
 ${JSON.stringify(input.evaluations, null, 2)}
 
-Return ONLY a JSON object matching this schema exactly:
+Return ONLY a JSON object matching this schema exactly (all strings in Russian):
 {
   "overallScore": number, // average, up to 1 decimal
   "recommendation": "НАЗНАЧИТЬ_ОФФЕР" | "ОТКАЗ" | "ДОП_ИНТЕРВЬЮ" | "СИНХРОНИЗАЦИЯ",
-  "rationale": "High-level reason for recommendation",
-  "strengths": ["string"],
-  "risks": ["string"],
-  "notableEvidence": ["Quote or clear evidence from notes"],
-  "discrepancies": "string or null if none",
-  "nextStepSuggestion": "Specific actionable next step"
+  "rationale": "High-level reason for recommendation (Russian)",
+  "strengths": ["string in Russian"],
+  "risks": ["string in Russian"],
+  "notableEvidence": ["Evidence from notes in Russian"],
+  "discrepancies": "string in Russian or null if none",
+  "nextStepSuggestion": "Specific actionable next step in Russian"
 }
 `;
 
@@ -278,10 +279,10 @@ async function getLocalMockSummary(): Promise<GeneratedCandidateSummary> {
 const DISAGREEMENT_SYSTEM_PROMPT = `You are an internal HR Calibration Expert.
 You are given a case where interviewers evaluated the same candidate on the same competency but gave wildly different scores (difference >= 2).
 Your job is to read their notes and determine WHY they disagreed.
-Do not summarize. Interpret the core conflict.
+Do not summarize. Interpret the core conflict in RUSSIAN.
 Was it because one interviewer asked a harder question? Or one focused on theory while the other focused on practice? Or are they evaluating different aspects of the same block?
 Assess if this is a systemic risk for hiring, and recommend an action.
-Output MUST be valid JSON.`;
+Output MUST be valid JSON (all strings in Russian).`;
 
 export async function analyzeDisagreements(payload: {
   candidateName: string;
@@ -307,18 +308,18 @@ export async function analyzeDisagreements(payload: {
   const openai = new OpenAI({ baseURL: "https://openrouter.ai/api/v1", apiKey });
 
   const userPrompt = `
-Analyze these specific disagreements for candidate ${payload.candidateName}:
+Analyze these specific disagreements for candidate ${payload.candidateName} in RUSSIAN:
 ${JSON.stringify(payload.conflicts, null, 2)}
 
-Return JSON matching this schema:
+Return JSON matching this schema (all strings in Russian):
 {
   "disagreements": [
     {
       "blockTitle": "string",
-      "reason": "Deep interpretation of why their notes/perspective differed",
+      "reason": "Deep interpretation of why their notes/perspective differed (Russian)",
       "isRisk": boolean,
       "recommendedAction": "CALIBRATION" | "EXTRA_INTERVIEW" | "FOCUS_AREA",
-      "actionDescription": "Actionable advice for the hiring manager"
+      "actionDescription": "Actionable advice for the hiring manager (Russian)"
     }
   ]
 }

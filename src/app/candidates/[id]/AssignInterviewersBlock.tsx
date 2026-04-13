@@ -51,14 +51,7 @@ export default function AssignInterviewersBlock({ applicationId, currentIntervie
     setError(null);
   };
 
-  const getSessionStatus = (interviewerId: string) => {
-    const s = sessions.find(ses => ses.interviewerId === interviewerId);
-    if (!s) return null;
-    return s.status;
-  };
-
-  const statusLabel = (status: string | null) => {
-    if (!status) return { text: 'Не назначен', color: 'bg-zinc-100 text-zinc-500' };
+  const statusLabel = (status: string) => {
     if (status === 'ЗАВЕРШЕНО') return { text: 'Завершено', color: 'bg-emerald-100 text-emerald-800' };
     return { text: 'Ожидает', color: 'bg-amber-100 text-amber-800' };
   };
@@ -90,18 +83,17 @@ export default function AssignInterviewersBlock({ applicationId, currentIntervie
         {/* Current assignments summary */}
         {!isEditing && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {currentInterviewerIds.length === 0 && (
+            {sessions.length === 0 && (
               <div className="col-span-2 text-center py-8">
                 <span className="text-3xl mb-2 block">👥</span>
                 <p className="text-sm text-zinc-500">Интервьюеры пока не назначены</p>
               </div>
             )}
-            {currentInterviewerIds.map(id => {
-              const int = allInterviewers.find(i => i.id === id) || { id, name: sessions.find(s => s.interviewerId === id)?.interviewerName || id, role: '' };
-              const status = getSessionStatus(id);
-              const label = statusLabel(status);
+            {sessions.map(s => {
+              const int = allInterviewers.find(i => i.id === s.interviewerId) || { id: s.interviewerId, name: s.interviewerName, role: 'Эксперт' };
+              const label = statusLabel(s.status);
               return (
-                <div key={id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 bg-zinc-50/50">
+                <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 bg-zinc-50/50">
                   <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-bold border border-violet-200 shrink-0">
                     {int.name.charAt(0)}
                   </div>
