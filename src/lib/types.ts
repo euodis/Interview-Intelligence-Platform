@@ -70,8 +70,11 @@ export interface CandidateSummary {
   overallScore: number;
   strengths: string[];
   risks: string[];
-  discrepancies: string | null;
+  discrepancies: string | null; // This maps to discrepanciesText in DB
   recommendation: RecommendationType;
+  rationale?: string;
+  notableEvidence?: string[];
+  nextStepSuggestion?: string;
 }
 
 // Утилита для агрегации, которую мы будем использовать в UI:
