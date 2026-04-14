@@ -73,7 +73,7 @@ async function main() {
         status: vac.status,
         createdAt: new Date(vac.createdAt),
         competencies: {
-          create: vac.competencies.map(c => ({
+          create: vac.competencies.map((c: any) => ({
             competencyId: c.id
           }))
         }
@@ -91,13 +91,13 @@ async function main() {
         id: plan.id,
         vacancyId: plan.vacancyId,
         blocks: {
-          create: plan.blocks.map(block => ({
+          create: plan.blocks.map((block: any) => ({
             id: block.id,
             competencyId: block.competencyId,
             title: block.title,
             required: block.required,
             questions: {
-              create: block.questions.map(q => ({ text: q }))
+              create: block.questions.map((q: any) => ({ text: q }))
             }
           }))
         }
