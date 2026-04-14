@@ -165,7 +165,7 @@ export default function CompareClient({
               {/* HEADER ROW - EMPTY CELL */}
               <div className="hidden md:block"></div>
               {/* HEADER CELLS */}
-              {comparisonData.map(({ candidate, summary }, idx) => (
+              {comparisonData.map(({ candidate, summary }: any, idx: number) => (
                   <div key={idx} className="flex flex-col gap-2 p-6 rounded-2xl bg-white border border-zinc-200 shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between">
                          <h2 className="text-xl font-bold text-zinc-900 truncate" title={candidate.name}>{candidate.name}</h2>
@@ -206,7 +206,7 @@ export default function CompareClient({
 
               {/* OVERALL SCORE ROW */}
               <div className="flex items-center text-sm font-bold text-zinc-500 uppercase tracking-widest pl-2">Overall Score</div>
-              {comparisonData.map(({ summary }, idx) => (
+              {comparisonData.map(({ summary }: any, idx: number) => (
                   <div key={idx} className="flex items-center gap-3">
                       <span className="text-4xl font-black text-zinc-900">{summary?.overallScore.toFixed(1) || '-'}</span>
                       {summary && <span className="text-lg text-zinc-400 font-medium">/ 5</span>}
@@ -216,10 +216,10 @@ export default function CompareClient({
               <div className="col-span-full h-px bg-zinc-200 my-2"></div>
 
               {/* COMPETENCIES BLOCKS */}
-              {plan?.blocks.map((block) => (
+              {plan?.blocks.map((block: any) => (
                   <div className="col-span-full grid" style={{ gridTemplateColumns: 'inherit' }} key={block.id}>
                       <div className="flex items-center text-sm font-bold text-zinc-900 py-3 pr-4 leading-tight">{block.title}</div>
-                      {comparisonData.map(({ blockScores }, idx) => {
+                      {comparisonData.map(({ blockScores }: any, idx: number) => {
                           const avg = blockScores[block.id];
                           if (avg === null || avg === undefined) {
                               return <div key={idx} className="flex items-center text-xs text-zinc-400 italic py-3">N/A</div>
@@ -249,10 +249,10 @@ export default function CompareClient({
                     Сильные стороны
                  </div>
               </div>
-              {comparisonData.map(({ summary }, idx) => (
+              {comparisonData.map(({ summary }: any, idx: number) => (
                   <div key={idx} className="flex flex-col gap-2">
                      <ul className="text-sm text-zinc-700 space-y-2.5">
-                         {summary?.strengths?.map((str, i) => (
+                         {summary?.strengths?.map((str: string, i: number) => (
                              <li key={i} className="flex gap-2">
                                 <span className="text-emerald-500 font-bold">•</span>
                                 <span className="leading-relaxed font-medium">{str}</span>
@@ -271,10 +271,10 @@ export default function CompareClient({
                     Зоны Риска
                  </div>
               </div>
-              {comparisonData.map(({ summary }, idx) => (
+              {comparisonData.map(({ summary }: any, idx: number) => (
                   <div key={idx} className="flex flex-col gap-2">
                      <ul className="text-sm text-zinc-700 space-y-2.5">
-                         {summary?.risks?.map((str, i) => (
+                         {summary?.risks?.map((str: string, i: number) => (
                              <li key={i} className="flex gap-2">
                                 <span className="text-rose-500 font-bold">•</span>
                                 <span className="leading-relaxed font-medium">{str}</span>
@@ -288,7 +288,7 @@ export default function CompareClient({
 
               {/* ACTIONS */}
               <div></div> {/* Empty for first col */}
-              {comparisonData.map(({ candidate }, idx) => (
+              {comparisonData.map(({ candidate }: any, idx: number) => (
                  <div key={idx} className="pt-2">
                      <Link href={`/candidates/${candidate.id}`} className="block w-full text-center py-2.5 rounded-xl bg-zinc-100 text-zinc-600 font-bold text-sm hover:bg-zinc-200 hover:text-zinc-900 transition-colors">
                         Смотреть профиль &rarr;
@@ -319,7 +319,7 @@ export default function CompareClient({
                        </p>
 
                        <div className="grid md:grid-cols-2 gap-8 mb-10">
-                           {aiAnalysis.comparisonPoints.map((point, i) => (
+                           {aiAnalysis.comparisonPoints.map((point: any, i: number) => (
                                <div key={i} className="flex flex-col gap-2 p-5 rounded-2xl bg-white border border-violet-100 shadow-sm hover:shadow-md transition-shadow">
                                    <h4 className="font-black text-xs uppercase tracking-[0.2em] text-violet-600">{point.area}</h4>
                                    <p className="text-sm text-zinc-700 leading-relaxed font-medium">{point.analysis}</p>
