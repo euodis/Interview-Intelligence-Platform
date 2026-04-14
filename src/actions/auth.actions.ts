@@ -8,7 +8,12 @@ export async function authenticate(
   formData: FormData,
 ) {
   try {
-    await signIn('credentials', formData);
+    // We explicitly set redirectTo: '/' to avoid returning to a potentially restricted URL 
+    // from a previous session with a different role.
+    await signIn('credentials', {
+      ...Object.fromEntries(formData),
+      redirectTo: '/',
+    });
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -23,5 +28,6 @@ export async function authenticate(
 }
 
 export async function logOut() {
-    await signOut();
+    // Explicitly redirect to login to clear any session-specific callback URLs
+    await signOut({ redirectTo: '/login' });
 }
