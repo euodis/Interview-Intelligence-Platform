@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Interview Intelligence Platform (II-Platform)
 
-## Getting Started
+## 1. Обзор проекта
+**Interview Intelligence Platform** — это современная экосистема для автоматизации и интеллектуального анализа процесса найма. Платформа помогает HR-менеджерам и техническим интервьюерам проводить глубокую оценку кандидатов, структурировать обратную связь и принимать решения на основе данных (data-driven decisions), а не субъективных ощущений.
 
-First, run the development server:
+## 2. Проблематика
+Традиционный процесс найма страдает от нескольких критических проблем:
+- **Разрозненность данных**: Фидбек от разных интервьюеров часто хранится в разных местах (Slack, Notion, блокноты).
+- **Субъективность**: Оценки «нравится / не нравится» мешают объективному сравнению компетенций.
+- **Сложность синтеза**: HR-менеджеру трудно собрать воедино 3-4 технических протокола и вынести финальный вердикт.
+- **Потеря инсайтов**: Ценные детали интервью забываются сразу после его завершения.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 3. Описание решения
+II-Platform централизует процесс оценки, внедряя «умный» слой аналитики:
+- **Интеллектуальные планы**: ИИ генерирует вопросы под конкретную вакансию и компетенции.
+- **Протоколирование**: Удобный интерфейс для фиксации сигналов и оценок в реальном времени.
+- **Автоматический синтез**: Система агрегирует все отзывы в единый отчет с выделением сильных сторон и рисков.
+- **Калибровка и сравнение**: Инструменты для выявления конфликтов в оценках и Side-by-Side сравнения кандидатов.
+
+## 4. Ключевые функции
+- **Dashboard вакансии**: Визуализация воронки, средних баллов и автоматическое выявление «проблемных» кандидатов с противоречивыми оценками.
+- **Генератор интервью-планов**: Создание структурированных блоков (Technical, Soft Skills, System Design) с целями и практическими вопросами.
+- **AI Candidate Summary**: Генерация итогового резюме кандидата (Strengths/Risks) на основе всех проведенных сессий.
+- **Conflict Resolution (AI Calibration)**: Если два интервьюера ставят полярные оценки за одну и ту же компетенцию, ИИ интерпретирует причины разногласий и предлагает план действий.
+- **Side-by-Side Comparison**: Сравнение двух кандидатов по компетенциям с ИИ-вердиктом и обоснованием выбора.
+
+## 5. Использование ИИ
+Платформа использует многослойную логику обработки естественного языка через **OpenRouter (Anthropic Claude 3.5/4.6)**:
+- **Structured Output**: Все ответы ИИ валидируются через Zod-схемы для обеспечения устойчивости UI.
+- **Contextual Synthesis**: ИИ анализирует не только баллы, но и текстовые заметки интервьюеров для поиска доказательств (Evidence).
+- **Calibration Engine**: Интерпретация конфликтов между экспертами для уменьшения влияния когнитивных искажений.
+- **Resilient Logic**: В системе реализованы надежные fallback-механизмы на случай недоступности API.
+
+## 6. Технологический стек
+- **Framework**: Next.js 16 (App Router) — использование Server Components и Server Actions.
+- **Database**: PostgreSQL.
+- **ORM**: Prisma — типобезопасная работа с данными и миграциями.
+- **Authentication**: NextAuth.js (Auth.js) — авторизация через Credentials (Email/Password).
+- **Styling**: Vanilla CSS + Tailwind CSS для современных динамических интерфейсов.
+- **AI SDK**: OpenAI (compatible via OpenRouter).
+- **Validation**: Zod.
+
+## 7. Архитектура
+Проект следует принципам модульной архитектуры в рамках Next.js:
+- **Actions layer**: Бизнес-логика вынесена в Server Actions для четкого разделения ответственности.
+- **Client Components**: Интерактивные формы и дашборды с оптимистичными обновлениями.
+- **AI Integration Logic**: Изолированный слой в `src/lib/ai.ts` для управления промптами и обработки ответов.
+
+## 8. Схема данных
+Основные сущности:
+- **Vacancy**: Профиль позиции, уровень (Senior/Lead) и список компетенций.
+- **InterviewPlan**: Состоит из `Blocks` (компетенций) и `Questions`.
+- **Application**: Привязка кандидата к вакансии, текущий статус (НОВЫЙ, ИНТЕРВЬЮ, ОЦЕНЕН).
+- **InterviewSession**: Конкретный этап интервью с назначенным экспертом.
+- **BlockEvaluation**: Оценки (1-5) и заметки по конкретным блокам плана.
+- **CandidateSummary**: Итоговый отчет, сгенерированный ИИ.
+
+## 9. Запуск локально
+### Через Docker (рекомендуется)
+1. Склонируйте репозиторий.
+2. Создайте файл `.env.local` (см. раздел Переменные окружения).
+3. Запустите окружение:
+   ```bash
+   docker compose up -d
+   ```
+4. Примените миграции и сиды:
+   ```bash
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
+
+### Без Docker
+1. Установите зависимости: `npm install`.
+2. Настройте локальный PostgreSQL.
+3. Запустите: `npm run dev`.
+
+## 10. Переменные окружения
+Создайте `.env.local`:
+```env
+DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+OPENROUTER_API_KEY="your-openrouter-key"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 11. Развертывание
+Проект готов к деплою через Docker (имеются `Dockerfile` и `docker-compose.prod.yml`):
+1. Сборка образа: `docker compose build`.
+2. Запуск в продакшене: `docker compose up -d`.
+3. Мониторинг логов: `docker compose logs -f`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 12. Демо-сценарий
+1. **Создание**: HR создает вакансию (например, "Frontend Lead").
+2. **План**: Система генерирует технический план интервью.
+3. **Оценка**: Два технических эксперта проводят интервью и фиксируют заметки в системе.
+4. **Анализ**: Система обнаруживает, что один эксперт оценил System Design на 2, а другой на 5.
+5. **Калибровка**: ИИ анализирует причины (один спрашивал теорию, другой практику) и предлагает HR провести синк.
+6. **Сравнение**: HR сравнивает двух финалистов Side-by-Side и принимает решение на основе ИИ-анализа сильных и слабых сторон.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 13. Продуктовые и дизайнерские решения
+- **Цветовое кодирование**: Использование «песочных» оттенков для статусов ожидания и контрастных темных для завершенных этапов.
+- **Ограничение выбора**: В инструменте сравнения разрешено выбирать максимум 2 кандидатов одновременно, чтобы не перегружать когнитивные способности принимающего решение.
+- **Sticky Layout**: В таблице кандидатов первая колонка закреплена для удобства работы с большими объемами данных.
 
-## Learn More
+## 14. Известные ограничения
+- Текущая версия сфокусирована на IT-ролях (Engineering/Product).
+- Отсутствует прямая интеграция с календарями (Outlook/Google).
+- Первоначальное наполнение данных зависит от качества заметок интервьюеров.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 15. Планы по развитию
+- **Collaborative Sync**: Синхронный режим проведения интервью (несколько экспертов в одной форме).
+- **Resume Parsing**: Автоматическое извлечение компетенций из PDF-резюме.
+- **Интеграция с ATS**: Синхронизация статусов с внешними системами (Huntflow/Greenhouse).

@@ -1,16 +1,22 @@
-FROM node:20-alpine AS base
+# syntax=docker/dockerfile:1
+FROM node:20-slim AS base
 
 # 1. Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Install required system dependencies for Prisma and build
+RUN apt-get update && apt-get install -y openssl libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json ./
-RUN npm ci
+# Use BuildKit cache for npm dependencies
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # 2. Rebuild the source code only when needed
 FROM base AS builder
+# Install openssl for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -18,20 +24,21 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Skip linting during build for speed
-RUN npm run build
+# Use BuildKit cache for Next.js build cache to speed up subsequent builds
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup -S nodejs -g 1001
-RUN adduser -S nextjs -u 1001
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

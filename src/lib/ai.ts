@@ -4,6 +4,11 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 // Schema for resilient parsing
+function cleanJsonString(str: string): string {
+  // Remove markdown code blocks if present
+  return str.replace(/```json/g, "").replace(/```/g, "").trim();
+}
+
 const InterviewPlanSchema = z.object({
   blocks: z.array(
     z.object({
@@ -113,7 +118,7 @@ Return ONLY a JSON object with this shape:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Very fast and reliable json-producer on OpenRouter
+      model: "anthropic/claude-opus-4.6-fast", // Very fast and reliable json-producer on OpenRouter
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt }
@@ -126,7 +131,8 @@ Return ONLY a JSON object with this shape:
     if (!content) throw new Error("No content received from specific LLM");
 
     // Defensive parsing
-    const parsedJson = JSON.parse(content);
+    const cleanContent = cleanJsonString(content);
+    const parsedJson = JSON.parse(cleanContent);
     const validData = InterviewPlanSchema.parse(parsedJson);
 
     // Map adding unique IDs
@@ -147,7 +153,7 @@ Return ONLY a JSON object with this shape:
 async function getLocalMockPlan(): Promise<GeneratedPlanBlock[]> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 2000));
-  
+
   return [
     {
       id: "mock-1",
@@ -243,7 +249,7 @@ Return ONLY a JSON object matching this schema exactly (all strings in Russian):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", 
+      model: "anthropic/claude-opus-4.6-fast",
       messages: [
         { role: "system", content: SUMMARY_SYSTEM_PROMPT },
         { role: "user", content: userPrompt }
@@ -255,7 +261,8 @@ Return ONLY a JSON object matching this schema exactly (all strings in Russian):
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error("No content received");
 
-    const parsedJson = JSON.parse(content);
+    const cleanContent = cleanJsonString(content);
+    const parsedJson = JSON.parse(cleanContent);
     return CandidateSummaryZodSchema.parse(parsedJson);
 
   } catch (error) {
@@ -339,7 +346,7 @@ Return JSON matching this schema (all strings in Russian):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "anthropic/claude-opus-4.6-fast",
       messages: [
         { role: "system", content: DISAGREEMENT_SYSTEM_PROMPT },
         { role: "user", content: userPrompt }
@@ -347,11 +354,12 @@ Return JSON matching this schema (all strings in Russian):
       response_format: { type: "json_object" },
       temperature: 0.2,
     });
-    
+
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error("Empty response");
-    
-    const parsedJson = JSON.parse(content);
+
+    const cleanContent = cleanJsonString(content);
+    const parsedJson = JSON.parse(cleanContent);
     return DisagreementInterpretationSchema.parse(parsedJson).disagreements;
   } catch (e) {
     console.error("Disagreement AI failed", e);
@@ -421,7 +429,7 @@ Return ONLY a JSON object matching this schema exactly (all strings in Russian):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "anthropic/claude-opus-4.6-fast",
       messages: [
         { role: "system", content: COMPARISON_SYSTEM_PROMPT },
         { role: "user", content: userPrompt }
@@ -433,7 +441,8 @@ Return ONLY a JSON object matching this schema exactly (all strings in Russian):
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error("Empty response");
 
-    const parsedJson = JSON.parse(content);
+    const cleanContent = cleanJsonString(content);
+    const parsedJson = JSON.parse(cleanContent);
     return ComparisonAnalysisZodSchema.parse(parsedJson);
   } catch (e) {
     console.error("AI Comparison failed", e);
