@@ -21,7 +21,7 @@ export const authConfig = {
       }
 
       // Role-based guarding
-      const userRole = auth.user.role as string;
+      const userRole = (auth?.user as any)?.role as string || 'GUEST';
       const isVacancyRoute = nextUrl.pathname.startsWith('/vacancies') || nextUrl.pathname.startsWith('/candidates');
       const isInterviewsRoute = nextUrl.pathname.startsWith('/interviews');
 

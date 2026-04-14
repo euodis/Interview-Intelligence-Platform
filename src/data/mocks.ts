@@ -1,7 +1,7 @@
 import { 
     Vacancy, Competency, InterviewPlan, Interviewer, Candidate, 
     InterviewSession, BlockEvaluation, CandidateSummary 
-} from './types';
+} from '../lib/types';
   
 // --- 1. СПРАВОЧНИКИ ---
 

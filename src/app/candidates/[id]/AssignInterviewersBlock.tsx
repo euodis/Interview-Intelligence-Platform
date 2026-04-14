@@ -89,7 +89,7 @@ export default function AssignInterviewersBlock({ applicationId, currentIntervie
                 <p className="text-sm text-zinc-500">Интервьюеры пока не назначены</p>
               </div>
             )}
-            {sessions.map(s => {
+            {sessions.map((s: any) => {
               const int = allInterviewers.find(i => i.id === s.interviewerId) || { id: s.interviewerId, name: s.interviewerName, role: 'Эксперт' };
               const label = statusLabel(s.status);
               return (
@@ -114,7 +114,7 @@ export default function AssignInterviewersBlock({ applicationId, currentIntervie
         {isEditing && (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {allInterviewers.map(int => {
+              {allInterviewers.map((int: any) => {
                 const isSelected = selected.includes(int.id);
                 return (
                   <button
