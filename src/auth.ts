@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   ...authConfig,
   providers: [
     Credentials({
@@ -17,17 +18,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (parsedCredentials.success) {
           const { email, password } = parsedCredentials.data;
           const user = await prisma.user.findUnique({ where: { email } });
-          
+
           if (!user || (!user.password && password !== 'password')) return null;
-          
+
           if (user.password) {
-             const passwordsMatch = await bcrypt.compare(password, user.password);
-             if (passwordsMatch) return user;
+            const passwordsMatch = await bcrypt.compare(password, user.password);
+            if (passwordsMatch) return user;
           } else if (password === 'password') {
-             return user;
+            return user;
           }
         }
-        
+
         return null;
       },
     }),
