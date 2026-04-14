@@ -25,7 +25,7 @@ export default function CompareClient({
           const others = availableCandidates.filter(c => c.id !== primaryCandidateId);
           return [primaryCandidateId, ...(others.length > 0 ? [others[0].id] : [])];
       }
-      return availableCandidates.slice(0, 2).map(c => c.id);
+      return availableCandidates.slice(0, 2).map((c: any) => c.id);
   });
 
   const [aiAnalysis, setAiAnalysis] = useState<ComparisonAnalysis | null>(null);
@@ -64,7 +64,7 @@ export default function CompareClient({
   };
 
   // Prepare comparison data
-  const comparisonData = selectedIds.map(id => {
+  const comparisonData = selectedIds.map((id: string) => {
       const candidate = availableCandidates.find(c => c.id === id)!;
       const summary = candidate.summary;
       const sessions = candidate.sessions.filter((s:any) => s.status === 'ЗАВЕРШЕНО');
@@ -130,7 +130,7 @@ export default function CompareClient({
          {/* Candidate Pill Selector */}
          <div className="flex items-center gap-2 mt-2 flex-wrap">
              <span className="text-sm font-bold text-zinc-500 mr-2 uppercase tracking-widest">Кандидаты (Max 2):</span>
-             {availableCandidates.map(c => {
+             {availableCandidates.map((c: any) => {
                  const isSelected = selectedIds.includes(c.id);
                  return (
                      <button 

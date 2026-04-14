@@ -26,7 +26,7 @@ export default function DisagreementAnalyzer({
         try {
             const result = await analyzeDisagreements({
                 candidateName,
-                conflicts: conflicts.map(c => ({
+                conflicts: conflicts.map((c: DisagreementConflict) => ({
                     blockTitle: c.blockTitle,
                     evaluations: c.evaluations
                 }))
@@ -75,7 +75,7 @@ export default function DisagreementAnalyzer({
             {/* Analysis Results */}
             {interpretations && (
                 <div className="flex flex-col bg-white">
-                    {conflicts.map((conflict, idx) => {
+                    {conflicts.map((conflict: DisagreementConflict, idx: number) => {
                         const aiInterp = interpretations.find(i => i.blockTitle === conflict.blockTitle);
                         
                         return (
@@ -84,7 +84,7 @@ export default function DisagreementAnalyzer({
                                 <div>
                                     <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-widest mb-3">Блок: {conflict.blockTitle}</h4>
                                     <div className="grid md:grid-cols-2 gap-4">
-                                        {conflict.evaluations.map((ev, i) => (
+                                        {conflict.evaluations.map((ev: any, i: number) => (
                                             <div key={i} className="flex gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
                                                 <div className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-lg font-bold text-sm shadow-sm ring-1 ring-inset ${
                                                     ev.score >= 4 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : ev.score <= 2 ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-amber-50 text-amber-700 ring-amber-200'

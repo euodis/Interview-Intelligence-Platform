@@ -24,7 +24,7 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
   // Application Data
   const completedSessions = candidates.flatMap(c => c.sessions).filter((s:any) => s.status === 'ЗАВЕРШЕНО');
   
-  const summaries = candidates.map(c => c.summary).filter(Boolean);
+  const summaries = candidates.map((c: any) => c.summary).filter(Boolean);
   const avgScore = summaries.length > 0 
     ? (summaries.reduce((acc, curr) => acc + curr.overallScore, 0) / summaries.length).toFixed(1)
     : 'N/A';
@@ -37,7 +37,7 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
   // Process data for table
-  let tableData = candidates.map(candidate => {
+  let tableData = candidates.map((candidate: any) => {
     const summary = candidate.summary;
     const candidateSessions = candidate.sessions;
     const assignedInterviewers = candidate.assignments.map((a:any) => a.interviewer);
@@ -97,7 +97,7 @@ export default function VacancyDashboardClient({ vacancy, candidates, userRole }
                </h1>
                <div className="flex items-center gap-2 mt-4 flex-wrap">
                   <span className="text-sm text-zinc-500 mr-2">Core competencies:</span>
-                  {vacancy.competencies.map(c => (
+                  {vacancy.competencies.map((c: any) => (
                       <span key={c.id} className="text-xs font-medium border border-zinc-200 bg-white px-2 py-1 rounded-md text-zinc-600 shadow-sm">{c.name}</span>
                   ))}
                </div>

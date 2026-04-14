@@ -180,7 +180,7 @@ export default function InterviewProtocolClient({ session, readOnly = false }: {
                                     <div>
                                         <label className="block text-xs font-bold text-zinc-900 uppercase tracking-widest mb-3">Оценка компетенции</label>
                                         <div className="flex items-center gap-2">
-                                            {[1, 2, 3, 4, 5].map(num => (
+                                            {[1, 2, 3, 4, 5].map((num: number) => (
                                                 <button
                                                     key={num}
                                                     type="button"

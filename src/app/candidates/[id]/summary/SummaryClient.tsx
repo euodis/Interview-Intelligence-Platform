@@ -180,7 +180,7 @@ export default function SummaryClient({ candidateInfo }: { candidateInfo: any })
                         Подтвержденные Сильные Стороны
                      </h4>
                      <ul className="text-sm text-zinc-700 space-y-3">
-                        {summary.strengths.map((str, i) => (
+                        {summary.strengths.map((str: string, i: number) => (
                            <li key={i} className="flex gap-2">
                               <span className="text-emerald-500 font-bold">•</span>
                               <span className="font-medium leading-relaxed">{str}</span>
@@ -195,7 +195,7 @@ export default function SummaryClient({ candidateInfo }: { candidateInfo: any })
                         Выявленные Зоны Риска
                      </h4>
                      <ul className="text-sm text-zinc-700 space-y-3">
-                        {summary.risks.map((str, i) => (
+                        {summary.risks.map((str: string, i: number) => (
                            <li key={i} className="flex gap-2">
                               <span className="text-rose-500 font-bold">•</span>
                               <span className="font-medium leading-relaxed">{str}</span>
@@ -212,7 +212,7 @@ export default function SummaryClient({ candidateInfo }: { candidateInfo: any })
                      Доказательная База (Notable Evidence)
                   </h3>
                   <div className="flex flex-col gap-3">
-                     {summary.notableEvidence.map((ev, i) => (
+                     {summary.notableEvidence.map((ev: string, i: number) => (
                         <div key={i} className="rounded-xl bg-zinc-50 px-4 py-3 border-l-4 border-l-violet-300 border border-zinc-100">
                            <p className="text-sm text-zinc-700 italic font-medium">"{ev}"</p>
                         </div>
