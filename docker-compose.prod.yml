@@ -8,7 +8,7 @@ services:
     container_name: ii_platform_web_prod
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}

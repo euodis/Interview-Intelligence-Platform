@@ -79,7 +79,7 @@ II-Platform централизует процесс оценки, внедряя
 ```env
 DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 NEXTAUTH_SECRET="your-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3001"
 OPENROUTER_API_KEY="your-openrouter-key"
 ```
 
