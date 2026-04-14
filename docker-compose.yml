@@ -8,13 +8,14 @@ services:
     volumes:
       - ./:/app
     ports:
-      - "3001:3001"
+      - "3003:3003"
       - "5555:5555"
     env_file:
       - .env.local
     command: npm run dev
     environment:
       - NODE_ENV=development
+      - PORT=3003
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/ii_platform?schema=public
     depends_on:
       - db
